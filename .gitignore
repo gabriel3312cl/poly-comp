@@ -1,0 +1,35 @@
+# Environment Variables
+.env
+.env*.local
+
+# Rust
+target/
+**/*.rs.bk
+# Cargo.lock is usually committed for applications to ensure reproducible builds, 
+# but if you prefer to ignore it for library-like behavior, uncomment next line:
+# Cargo.lock
+
+# Node.js / Frontend (Future proofing)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.next/
+dist/
+build/
+coverage/
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.iml
+.DS_Store
+Thumbs.db
+
+# Docker / Database
+postgres_data/
+
+# OS
+ehthumbs.db
+Desktop.ini

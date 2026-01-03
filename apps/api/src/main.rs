@@ -1,0 +1,81 @@
+mod config;
+mod domain;
+mod infrastructure;
+mod application;
+mod shared;
+mod web;
+mod state;
+
+use axum::{
+    routing::get,
+    Router,
+};
+use sqlx::postgres::PgPoolOptions;
+use std::net::SocketAddr;
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+use crate::config::Config;
+
+#[tokio::main]
+async fn main() -> anyhow::Result<()> {
+    tracing_subscriber::registry()
+        .with(tracing_subscriber::EnvFilter::new(
+            std::env::var("RUST_LOG").unwrap_or_else(|_| "debug".into()),
+        ))
+        .with(tracing_subscriber::fmt::layer())
+        .init();
+
+    let config = Config::from_env()?;
+
+    tracing::info!("Connecting to database...");
+    let pool = PgPoolOptions::new()
+        .max_connections(5)
+        .connect(&config.database_url)
+        .await?;
+    
+    tracing::info!("Database connected successfully.");
+
+    // Repositories
+    let user_repo = std::sync::Arc::new(infrastructure::postgres::user_repository::PostgresUserRepository::new(pool.clone()));
+    let game_repo = std::sync::Arc::new(infrastructure::postgres::game_repository::PostgresGameRepository::new(pool.clone()));
+    let participant_repo = std::sync::Arc::new(infrastructure::postgres::participant_repository::PostgresParticipantRepository::new(pool.clone()));
+    let transaction_repo = std::sync::Arc::new(infrastructure::postgres::transaction_repository::PostgresTransactionRepository::new(pool.clone()));
+
+    // Services
+    let user_service = std::sync::Arc::new(application::user_service::UserService::new(user_repo));
+    let game_service = std::sync::Arc::new(application::game_service::GameService::new(game_repo, participant_repo.clone()));
+    let transaction_service = std::sync::Arc::new(application::transaction_service::TransactionService::new(transaction_repo, participant_repo));
+
+    let app_state = state::AppState {
+        user_service,
+        game_service,
+        transaction_service,
+        config: config.clone(),
+    };
+
+    // Routes
+    let app = Router::new()
+        .route("/health", get(|| async { "OK" }))
+        // User Routes
+        .route("/users/register", axum::routing::post(web::handlers::user::register_user))
+        .route("/users/login", axum::routing::post(web::handlers::user::login_user))
+        .route("/users/logout", axum::routing::post(web::handlers::user::logout_user))
+        .route("/users/profile", axum::routing::put(web::handlers::user::update_user).delete(web::handlers::user::delete_user))
+        // Game Routes
+        .route("/games", axum::routing::post(web::handlers::game::create_game))
+        .route("/games/:id", axum::routing::put(web::handlers::game::update_game).delete(web::handlers::game::delete_game))
+        .route("/games/:id/join", axum::routing::post(web::handlers::game::join_game))
+        .route("/games/:id/leave", axum::routing::post(web::handlers::game::leave_game))
+        // Transaction Routes
+        .route("/games/:id/transactions", axum::routing::post(web::handlers::transaction::perform_transfer))
+        .route("/games/:id/transactions/:tx_id", axum::routing::delete(web::handlers::transaction::delete_transaction))
+        .layer(tower_http::trace::TraceLayer::new_for_http())
+        .with_state(app_state);
+
+    let addr = SocketAddr::from(([127, 0, 0, 1], config.port));
+    tracing::info!("listening on {}", addr);
+    
+    let listener = tokio::net::TcpListener::bind(addr).await?;
+    axum::serve(listener, app).await?;
+
+    Ok(())
+}
