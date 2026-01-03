@@ -62,11 +62,15 @@ async fn main() -> anyhow::Result<()> {
         .route("/users/profile", axum::routing::put(web::handlers::user::update_user).delete(web::handlers::user::delete_user))
         // Game Routes
         .route("/games", axum::routing::post(web::handlers::game::create_game))
-        .route("/games/:id", axum::routing::put(web::handlers::game::update_game).delete(web::handlers::game::delete_game))
+        .route("/games/:id", axum::routing::get(web::handlers::game::get_game)
+            .put(web::handlers::game::update_game)
+            .delete(web::handlers::game::delete_game))
         .route("/games/:id/join", axum::routing::post(web::handlers::game::join_game))
         .route("/games/:id/leave", axum::routing::post(web::handlers::game::leave_game))
+        .route("/games/:id/participants", axum::routing::get(web::handlers::game::get_participants))
         // Transaction Routes
-        .route("/games/:id/transactions", axum::routing::post(web::handlers::transaction::perform_transfer))
+        .route("/games/:id/transactions", axum::routing::get(web::handlers::transaction::get_transactions)
+            .post(web::handlers::transaction::perform_transfer))
         .route("/games/:id/transactions/:tx_id", axum::routing::delete(web::handlers::transaction::delete_transaction))
         .layer(tower_http::trace::TraceLayer::new_for_http())
         .with_state(app_state);
@@ -75,7 +79,35 @@ async fn main() -> anyhow::Result<()> {
     tracing::info!("listening on {}", addr);
     
     let listener = tokio::net::TcpListener::bind(addr).await?;
-    axum::serve(listener, app).await?;
+    axum::serve(listener, app)
+        .with_graceful_shutdown(shutdown_signal())
+        .await?;
 
     Ok(())
+}
+
+async fn shutdown_signal() {
+    let ctrl_c = async {
+        tokio::signal::ctrl_c()
+            .await
+            .expect("failed to install Ctrl+C handler");
+    };
+
+    #[cfg(unix)]
+    let terminate = async {
+        tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
+            .expect("failed to install signal handler")
+            .recv()
+            .await;
+    };
+
+    #[cfg(not(unix))]
+    let terminate = std::future::pending::<()>();
+
+    tokio::select! {
+        _ = ctrl_c => {},
+        _ = terminate => {},
+    }
+
+    tracing::info!("signal received, starting graceful shutdown");
 }

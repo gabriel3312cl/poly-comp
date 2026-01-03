@@ -39,6 +39,9 @@ impl TransactionService {
         // Just delete for now.
         self.transaction_repo.delete(tx_id).await
     }
+    pub async fn get_transactions(&self, game_id: Uuid) -> Result<Vec<Transaction>, anyhow::Error> {
+        self.transaction_repo.find_by_game(game_id).await
+    }
 }
 
 #[cfg(test)]
@@ -50,7 +53,7 @@ mod tests {
     #[tokio::test]
     async fn test_transfer_success() {
         let mut mock_tx_repo = MockTransactionRepository::new();
-        let mut mock_part_repo = MockParticipantRepository::new();
+        let mock_part_repo = MockParticipantRepository::new();
 
         mock_tx_repo.expect_execute_transfer()
             .times(1)
@@ -71,7 +74,7 @@ mod tests {
     #[tokio::test]
     async fn test_delete_transaction() {
         let mut mock_tx_repo = MockTransactionRepository::new();
-        let mut mock_part_repo = MockParticipantRepository::new();
+        let mock_part_repo = MockParticipantRepository::new();
         let tx_id = Uuid::new_v4();
 
         mock_tx_repo.expect_delete()

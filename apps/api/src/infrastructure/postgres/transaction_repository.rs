@@ -15,26 +15,6 @@ impl PostgresTransactionRepository {
 
 #[async_trait]
 impl TransactionRepository for PostgresTransactionRepository {
-    async fn create(&self, transaction: Transaction) -> Result<Transaction, anyhow::Error> {
-        let rec = sqlx::query_as::<_, Transaction>(
-            r#"
-            INSERT INTO transactions (id, game_id, from_participant_id, to_participant_id, amount, description)
-            VALUES ($1, $2, $3, $4, $5, $6)
-            RETURNING *
-            "#
-        )
-        .bind(transaction.id)
-        .bind(transaction.game_id)
-        .bind(transaction.from_participant_id)
-        .bind(transaction.to_participant_id)
-        .bind(transaction.amount)
-        .bind(transaction.description)
-        .fetch_one(&self.pool)
-        .await?;
-
-        Ok(rec)
-    }
-
     async fn find_by_game(&self, game_id: Uuid) -> Result<Vec<Transaction>, anyhow::Error> {
         let transactions = sqlx::query_as::<_, Transaction>(
             r#"

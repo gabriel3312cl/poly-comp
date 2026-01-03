@@ -18,7 +18,6 @@ pub trait UserRepository {
 pub trait GameRepository {
     async fn create(&self, game: GameSession) -> Result<GameSession, anyhow::Error>;
     async fn find_by_id(&self, id: Uuid) -> Result<Option<GameSession>, anyhow::Error>;
-    async fn update_status(&self, id: Uuid, status: String) -> Result<(), anyhow::Error>;
     async fn update(&self, game: GameSession) -> Result<GameSession, anyhow::Error>;
     async fn delete(&self, id: Uuid) -> Result<(), anyhow::Error>;
 }
@@ -28,14 +27,12 @@ pub trait GameRepository {
 pub trait ParticipantRepository {
     async fn add_participant(&self, participant: GameParticipant) -> Result<GameParticipant, anyhow::Error>;
     async fn find_by_game_id(&self, game_id: Uuid) -> Result<Vec<GameParticipant>, anyhow::Error>;
-    async fn get_balance(&self, participant_id: Uuid) -> Result<bigdecimal::BigDecimal, anyhow::Error>;
     async fn remove_participant(&self, game_id: Uuid, user_id: Uuid) -> Result<(), anyhow::Error>;
 }
 
 #[cfg_attr(test, mockall::automock)]
 #[async_trait]
 pub trait TransactionRepository {
-    async fn create(&self, transaction: Transaction) -> Result<Transaction, anyhow::Error>;
     async fn find_by_game(&self, game_id: Uuid) -> Result<Vec<Transaction>, anyhow::Error>;
     async fn delete(&self, id: Uuid) -> Result<(), anyhow::Error>;
     async fn execute_transfer(

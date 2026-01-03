@@ -3,20 +3,10 @@ use axum::{
     http::StatusCode,
     response::IntoResponse,
 };
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use uuid::Uuid;
 use crate::state::AppState;
 use crate::web::extractors::AuthorizedUser;
-
-#[derive(Deserialize)]
-pub struct CreateGameRequest {
-    // We don't need host_user_id here, we get it from token
-}
-
-#[derive(Deserialize)]
-pub struct JoinGameRequest {
-    // We don't need user_id here, we get it from token
-}
 
 #[derive(Deserialize)]
 pub struct UpdateGameRequest {
@@ -77,5 +67,27 @@ pub async fn delete_game(
      match state.game_service.delete_game(game_id, auth_user.user_id).await {
         Ok(_) => (StatusCode::NO_CONTENT, ()).into_response(),
         Err(e) => (StatusCode::BAD_REQUEST, e.to_string()).into_response(),
+    }
+}
+
+pub async fn get_game(
+    State(state): State<AppState>,
+    Path(game_id): Path<Uuid>,
+    _auth_user: AuthorizedUser,
+) -> impl IntoResponse {
+    match state.game_service.get_game(game_id).await {
+        Ok(game) => (StatusCode::OK, Json(game)).into_response(),
+        Err(e) => (StatusCode::NOT_FOUND, e.to_string()).into_response(),
+    }
+}
+
+pub async fn get_participants(
+    State(state): State<AppState>,
+    Path(game_id): Path<Uuid>,
+    _auth_user: AuthorizedUser,
+) -> impl IntoResponse {
+    match state.game_service.get_participants(game_id).await {
+         Ok(participants) => (StatusCode::OK, Json(participants)).into_response(),
+         Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
     }
 }

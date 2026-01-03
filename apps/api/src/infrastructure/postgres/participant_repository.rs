@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use sqlx::PgPool;
 use uuid::Uuid;
-use bigdecimal::BigDecimal;
+// use bigdecimal::BigDecimal;
 use crate::domain::{entities::GameParticipant, repositories::ParticipantRepository};
 
 pub struct PostgresParticipantRepository {
@@ -35,29 +35,11 @@ impl ParticipantRepository for PostgresParticipantRepository {
     }
 
     async fn find_by_game_id(&self, game_id: Uuid) -> Result<Vec<GameParticipant>, anyhow::Error> {
-        let recs = sqlx::query_as::<_, GameParticipant>(
-            r#"
-            SELECT * FROM game_participants WHERE game_id = $1
-            "#
-        )
-        .bind(game_id)
-        .fetch_all(&self.pool)
-        .await?;
-
-        Ok(recs)
-    }
-
-    async fn get_balance(&self, participant_id: Uuid) -> Result<BigDecimal, anyhow::Error> {
-        let rec: (BigDecimal,) = sqlx::query_as(
-            r#"
-            SELECT balance FROM game_participants WHERE id = $1
-            "#
-        )
-        .bind(participant_id)
-        .fetch_one(&self.pool)
-        .await?;
-
-        Ok(rec.0)
+        let participants = sqlx::query_as::<_, GameParticipant>("SELECT * FROM game_participants WHERE game_id = $1")
+            .bind(game_id)
+            .fetch_all(&self.pool)
+            .await?;
+        Ok(participants)
     }
 
     async fn remove_participant(&self, game_id: Uuid, user_id: Uuid) -> Result<(), anyhow::Error> {

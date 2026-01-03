@@ -2,7 +2,7 @@ use jsonwebtoken::{encode, decode, Header, Algorithm, Validation, EncodingKey, D
 use serde::{Serialize, Deserialize};
 use uuid::Uuid;
 use time::OffsetDateTime;
-use crate::config::Config;
+// use crate::config::Config;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {

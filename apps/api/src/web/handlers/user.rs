@@ -1,7 +1,7 @@
 use crate::state::AppState;
 use crate::web::extractors::AuthorizedUser;
 use axum::{
-    extract::{State, Json, Path},
+    extract::{State, Json},
     http::StatusCode,
     response::IntoResponse,
 };

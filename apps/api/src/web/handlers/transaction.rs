@@ -45,3 +45,14 @@ pub async fn delete_transaction(
         Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
     }
 }
+
+pub async fn get_transactions(
+    State(state): State<AppState>,
+    Path(game_id): Path<Uuid>,
+    _auth_user: AuthorizedUser,
+) -> impl IntoResponse {
+     match state.transaction_service.get_transactions(game_id).await {
+        Ok(txs) => (StatusCode::OK, Json(txs)).into_response(),
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
+    }
+}

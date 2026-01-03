@@ -36,45 +36,30 @@ impl GameRepository for PostgresGameRepository {
     }
 
     async fn find_by_id(&self, id: Uuid) -> Result<Option<GameSession>, anyhow::Error> {
-        let rec = sqlx::query_as::<_, GameSession>(
-            r#"
-            SELECT * FROM game_sessions WHERE id = $1
-            "#
-        )
-        .bind(id)
-        .fetch_optional(&self.pool)
-        .await?;
-
-        Ok(rec)
-    }
-
-    async fn update_status(&self, id: Uuid, status: String) -> Result<(), anyhow::Error> {
-        sqlx::query(
-            r#"
-            UPDATE game_sessions SET status = $1 WHERE id = $2
-            "#
-        )
-        .bind(status)
-        .bind(id)
-        .execute(&self.pool)
-        .await?;
-
-        Ok(())
+        let game = sqlx::query_as::<_, GameSession>("SELECT * FROM game_sessions WHERE id = $1")
+            .bind(id)
+            .fetch_optional(&self.pool)
+            .await?;
+        Ok(game)
     }
 
     async fn update(&self, game: GameSession) -> Result<GameSession, anyhow::Error> {
-        let rec = sqlx::query_as::<_, GameSession>(
+        let updated = sqlx::query_as::<_, GameSession>(
             r#"
-            UPDATE game_sessions SET name = $1, status = $2, ended_at = $3 WHERE id = $4 RETURNING *
+            UPDATE game_sessions 
+            SET host_user_id = $1, name = $2, status = $3, ended_at = $4
+            WHERE id = $5
+            RETURNING *
             "#
         )
+        .bind(game.host_user_id)
         .bind(game.name)
         .bind(game.status)
         .bind(game.ended_at)
         .bind(game.id)
         .fetch_one(&self.pool)
         .await?;
-        Ok(rec)
+        Ok(updated)
     }
 
     async fn delete(&self, id: Uuid) -> Result<(), anyhow::Error> {

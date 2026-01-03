@@ -103,6 +103,14 @@ impl GameService {
 
         self.game_repo.delete(game_id).await
     }
+    pub async fn get_game(&self, game_id: Uuid) -> Result<GameSession, anyhow::Error> {
+        self.game_repo.find_by_id(game_id).await?
+            .ok_or_else(|| anyhow::anyhow!("Game not found"))
+    }
+
+    pub async fn get_participants(&self, game_id: Uuid) -> Result<Vec<GameParticipant>, anyhow::Error> {
+        self.participant_repo.find_by_game_id(game_id).await
+    }
 }
 
 #[cfg(test)]
@@ -151,7 +159,7 @@ mod tests {
     #[tokio::test]
     async fn test_join_game_fails_if_active() {
         let mut mock_game_repo = MockGameRepository::new();
-        let mut mock_part_repo = MockParticipantRepository::new();
+        let mock_part_repo = MockParticipantRepository::new();
         let game_id = Uuid::new_v4();
 
         // Expect find_by_id returning ACTIVE game
