@@ -1,0 +1,20 @@
+meta {
+  name: join game
+  type: http
+  seq: 12
+}
+
+post {
+  url: http://localhost:3000/games/{{GAME_ID}}/join
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

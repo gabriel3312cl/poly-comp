@@ -38,13 +38,18 @@ impl GameService {
     }
 
     pub async fn join_game(&self, game_id: Uuid, user_id: Uuid) -> Result<GameParticipant, anyhow::Error> {
-        // Idempotency check: if already joined, return existing (or error, I'll return error for clarity)
-        // But first check if game exists and is in correct state
+        // Check if game exists and is in correct state
         let game = self.game_repo.find_by_id(game_id).await?
             .ok_or_else(|| anyhow::anyhow!("Game not found"))?;
 
         if game.status != GameStatus::WAITING.to_string() {
             return Err(anyhow::anyhow!("Game is not open for joining"));
+        }
+
+        // Check if user is already a participant
+        let participants = self.participant_repo.find_by_game_id(game_id).await?;
+        if participants.iter().any(|p| p.user_id == user_id) {
+             return Err(anyhow::anyhow!("User is already a participant in this game"));
         }
 
         let participant = GameParticipant {
@@ -143,7 +148,13 @@ mod tests {
                 ended_at: None,
             })));
 
-        // 3. Expect add_participant (host joining)
+        // 3. Expect find_by_game_id (idempotency check) -> Return empty list (not joined yet)
+        mock_part_repo.expect_find_by_game_id()
+            .with(eq(game_id))
+            .times(1)
+            .returning(|_| Ok(vec![]));
+
+        // 4. Expect add_participant (host joining)
         mock_part_repo.expect_add_participant()
             .times(1)
             .returning(|p| Ok(p));
