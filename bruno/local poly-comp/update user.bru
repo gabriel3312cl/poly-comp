@@ -1,0 +1,31 @@
+meta {
+  name: update user
+  type: http
+  seq: 5
+}
+
+put {
+  url: http://localhost:3000/users/profile
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "first_name": "Rich",
+    "last_name": "Uncle"
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

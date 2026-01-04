@@ -1,0 +1,24 @@
+meta {
+  name: create a game
+  type: http
+  seq: 8
+}
+
+post {
+  url: http://localhost:3000/games
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+vars:post-response {
+  GAME_ID: res.body.id
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

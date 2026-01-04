@@ -1,0 +1,20 @@
+meta {
+  name: logout user
+  type: http
+  seq: 6
+}
+
+post {
+  url: http://localhost:3000/users/logout
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
