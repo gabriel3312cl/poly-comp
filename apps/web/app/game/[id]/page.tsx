@@ -26,6 +26,7 @@ import ExitToAppIcon from '@mui/icons-material/ExitToApp';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { parseServerDate } from '@/utils/formatters';
 import { useAuthStore } from '@/store/authStore';
+import DiceSection from '@/components/DiceSection';
 import SettingsIcon from '@mui/icons-material/Settings';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import PauseIcon from '@mui/icons-material/Pause';
@@ -241,6 +242,9 @@ export default function GameSessionPage() {
                             </Button>
                         </Stack>
                     </Box>
+
+                    {/* Dice Roller */}
+                    <DiceSection gameId={id} />
                 </Grid>
 
                 {/* History Column */}

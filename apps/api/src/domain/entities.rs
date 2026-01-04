@@ -92,3 +92,32 @@ pub struct Transaction {
     pub description: Option<String>,
     pub created_at: Option<OffsetDateTime>,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+pub struct DiceRoll {
+    pub id: Uuid,
+    pub game_id: Uuid,
+    pub user_id: Uuid,
+    pub dice_count: i32,
+    pub dice_sides: i32,
+    pub results: sqlx::types::Json<Vec<i32>>,
+    pub total: i32,
+    #[serde(with = "time::serde::rfc3339::option")]
+    pub created_at: Option<OffsetDateTime>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+pub struct DiceRollHistory {
+    pub id: Uuid,
+    pub game_id: Uuid,
+    pub user_id: Uuid,
+    pub dice_count: i32,
+    pub dice_sides: i32,
+    pub results: sqlx::types::Json<Vec<i32>>,
+    pub total: i32,
+    #[serde(with = "time::serde::rfc3339::option")]
+    pub created_at: Option<OffsetDateTime>,
+    // Joined fields
+    pub first_name: String,
+    pub last_name: String,
+}

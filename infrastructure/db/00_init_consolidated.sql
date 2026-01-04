@@ -90,3 +90,19 @@ ALTER TABLE users OWNER TO monopoly_user;
 ALTER TABLE game_sessions OWNER TO monopoly_user;
 ALTER TABLE game_participants OWNER TO monopoly_user;
 ALTER TABLE transactions OWNER TO monopoly_user;
+
+-- Dice Rolls Table
+-- Records history of dice rolls in the game
+CREATE TABLE dice_rolls (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    game_id UUID NOT NULL REFERENCES game_sessions(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    dice_count INT NOT NULL,
+    dice_sides INT NOT NULL,
+    results JSONB NOT NULL, -- Array of individual results e.g. [3, 5]
+    total INT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_dice_rolls_game_id ON dice_rolls(game_id);
+ALTER TABLE dice_rolls OWNER TO monopoly_user;
