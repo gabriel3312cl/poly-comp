@@ -1,0 +1,33 @@
+meta {
+  name: perform transfer
+  type: http
+  seq: 17
+}
+
+post {
+  url: http://localhost:3000/games/{{GAME_ID}}/transactions
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "amount": 200,
+    "description": "Salary",
+    "from_participant_id": null,
+    "to_participant_id": "8d123ef9-4638-471d-b1d8-365e049692f2"
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

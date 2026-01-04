@@ -29,10 +29,46 @@ impl TransactionRepository for PostgresTransactionRepository {
     }
 
     async fn delete(&self, id: Uuid) -> Result<(), anyhow::Error> {
+        let mut tx = self.pool.begin().await?;
+
+        // 1. Fetch transaction details to know what to reverse
+        let transaction: Option<Transaction> = sqlx::query_as("SELECT * FROM transactions WHERE id = $1 FOR UPDATE")
+            .bind(id)
+            .fetch_optional(&mut *tx)
+            .await?;
+
+        let transaction = match transaction {
+            Some(t) => t,
+            None => return Ok(()) // Already deleted or not found
+        };
+
+        // 2. Reverse effects
+        // Refund Sender (Add back)
+        if let Some(from_id) = transaction.from_participant_id {
+             sqlx::query("UPDATE game_participants SET balance = balance + $1 WHERE id = $2")
+                 .bind(&transaction.amount)
+                 .bind(from_id)
+                 .execute(&mut *tx)
+                 .await?;
+        }
+
+        // Reclaim from Receiver (Deduct)
+        if let Some(to_id) = transaction.to_participant_id {
+             // We allow negative balance here? Typically user wants undo, so yes, we force deduction even if it goes negative (debt).
+             sqlx::query("UPDATE game_participants SET balance = balance - $1 WHERE id = $2")
+                 .bind(&transaction.amount)
+                 .bind(to_id)
+                 .execute(&mut *tx)
+                 .await?;
+        }
+
+        // 3. Delete Record
         sqlx::query("DELETE FROM transactions WHERE id = $1")
             .bind(id)
-            .execute(&self.pool)
+            .execute(&mut *tx)
             .await?;
+
+        tx.commit().await?;
         Ok(())
     }
 

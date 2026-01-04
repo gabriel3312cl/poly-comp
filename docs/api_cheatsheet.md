@@ -120,6 +120,10 @@ curl -X POST http://localhost:3000/games/join \
 ```
 
 ### Join Game (by ID)
+```bash
+curl -X POST http://localhost:3000/games/$env:GAME_ID/join \
+  -H "Authorization: Bearer $env:TOKEN"
+```
 
 ### List Participants (Check Balances)
 ```bash

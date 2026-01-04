@@ -1,0 +1,30 @@
+meta {
+  name: join game by code
+  type: http
+  seq: 12
+}
+
+post {
+  url: http://localhost:3000/games/join
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "code": "MKNZ"
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
