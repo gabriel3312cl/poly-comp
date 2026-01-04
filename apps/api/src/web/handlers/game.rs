@@ -97,13 +97,14 @@ pub async fn get_game(
     }
 }
 
-pub async fn get_participants(
+// GET /games/:id/participants
+pub async fn get_game_participants(
     State(state): State<AppState>,
     Path(game_id): Path<Uuid>,
-    _auth_user: AuthorizedUser,
+    _auth: AuthorizedUser,
 ) -> impl IntoResponse {
-    match state.game_service.get_participants(game_id).await {
-         Ok(participants) => (StatusCode::OK, Json(participants)).into_response(),
-         Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
+    match state.game_service.get_participants_with_details(game_id).await {
+        Ok(participants) => (StatusCode::OK, Json(participants)).into_response(),
+        Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, "Failed to fetch participants".to_string()).into_response(),
     }
 }

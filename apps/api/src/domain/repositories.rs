@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use uuid::Uuid;
-use super::entities::{User, GameSession, GameParticipant, Transaction};
+use crate::domain::entities::{GameSession, GameParticipant, Transaction, User, ParticipantDetail};
 
 #[cfg_attr(test, mockall::automock)]
 #[async_trait]
@@ -28,6 +28,7 @@ pub trait GameRepository {
 pub trait ParticipantRepository {
     async fn add_participant(&self, participant: GameParticipant) -> Result<GameParticipant, anyhow::Error>;
     async fn find_by_game_id(&self, game_id: Uuid) -> Result<Vec<GameParticipant>, anyhow::Error>;
+    async fn find_details_by_game_id(&self, game_id: Uuid) -> Result<Vec<ParticipantDetail>, anyhow::Error>;
     async fn remove_participant(&self, game_id: Uuid, user_id: Uuid) -> Result<(), anyhow::Error>;
 }
 

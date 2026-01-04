@@ -72,6 +72,17 @@ pub struct GameParticipant {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+pub struct ParticipantDetail {
+    pub id: Uuid,
+    pub game_id: Uuid,
+    pub user_id: Uuid,
+    pub balance: BigDecimal,
+    pub username: String,
+    pub first_name: String,
+    pub last_name: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct Transaction {
     pub id: Uuid,
     pub game_id: Uuid,

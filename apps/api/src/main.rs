@@ -7,6 +7,7 @@ mod web;
 mod state;
 
 use axum::{
+    http,
     routing::get,
     Router,
 };
@@ -70,15 +71,30 @@ async fn main() -> anyhow::Result<()> {
             .delete(web::handlers::game::delete_game))
         .route("/games/:id/join", axum::routing::post(web::handlers::game::join_game))
         .route("/games/:id/leave", axum::routing::post(web::handlers::game::leave_game))
-        .route("/games/:id/participants", axum::routing::get(web::handlers::game::get_participants))
+        .route("/games/:id/participants", axum::routing::get(web::handlers::game::get_game_participants))
         // Transaction Routes
         .route("/games/:id/transactions", axum::routing::get(web::handlers::transaction::get_transactions)
             .post(web::handlers::transaction::perform_transfer))
         .route("/games/:id/transactions/:tx_id", axum::routing::delete(web::handlers::transaction::delete_transaction))
         .layer(tower_http::trace::TraceLayer::new_for_http())
+        .layer(
+            tower_http::cors::CorsLayer::new()
+                .allow_origin(tower_http::cors::Any)
+                .allow_methods([
+                    http::Method::GET,
+                    http::Method::POST,
+                    http::Method::PUT,
+                    http::Method::DELETE,
+                    http::Method::OPTIONS,
+                ])
+                .allow_headers([
+                    http::header::CONTENT_TYPE,
+                    http::header::AUTHORIZATION,
+                ]),
+        )
         .with_state(app_state);
 
-    let addr = SocketAddr::from(([127, 0, 0, 1], config.port));
+    let addr = SocketAddr::from(([0, 0, 0, 0], config.port));
     tracing::info!("listening on {}", addr);
     
     let listener = tokio::net::TcpListener::bind(addr).await?;

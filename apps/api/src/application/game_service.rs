@@ -132,8 +132,10 @@ impl GameService {
             .ok_or_else(|| anyhow::anyhow!("Game not found"))
     }
 
-    pub async fn get_participants(&self, game_id: Uuid) -> Result<Vec<GameParticipant>, anyhow::Error> {
-        self.participant_repo.find_by_game_id(game_id).await
+
+
+    pub async fn get_participants_with_details(&self, game_id: Uuid) -> Result<Vec<crate::domain::entities::ParticipantDetail>, anyhow::Error> {
+        self.participant_repo.find_details_by_game_id(game_id).await
     }
 }
 
