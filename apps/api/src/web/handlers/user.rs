@@ -57,6 +57,16 @@ pub async fn logout_user(
     }
 }
 
+pub async fn get_current_user(
+    State(state): State<AppState>,
+    auth_user: AuthorizedUser,
+) -> impl IntoResponse {
+    match state.user_service.get_user(auth_user.user_id).await {
+        Ok(user) => (StatusCode::OK, Json(user)).into_response(),
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
+    }
+}
+
 pub async fn register_user(
     State(state): State<AppState>,
     Json(payload): Json<RegisterUserRequest>,

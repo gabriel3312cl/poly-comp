@@ -1,0 +1,31 @@
+meta {
+  name: login
+  type: http
+  seq: 2
+}
+
+post {
+  url: http://localhost:3000/users/login
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "username": "batman",
+    "password": "batman3312"
+  }
+}
+
+vars:post-response {
+  authToken: res.body.token
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

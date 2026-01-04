@@ -48,6 +48,12 @@ curl -X PUT http://localhost:3000/users/profile \
   }'
 ```
 
+### Get Current User Profile
+```bash
+curl -X GET http://localhost:3000/users/profile \
+  -H "Authorization: Bearer $env:TOKEN"
+```
+
 ### Logout
 ```bash
 curl -X POST http://localhost:3000/users/logout \
