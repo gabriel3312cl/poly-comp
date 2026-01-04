@@ -25,12 +25,28 @@ pub async fn create_game(
     }
 }
 
+#[derive(Deserialize)]
+pub struct JoinGameByCodeRequest {
+    pub code: String,
+}
+
 pub async fn join_game(
     State(state): State<AppState>,
     Path(game_id): Path<Uuid>,
     auth_user: AuthorizedUser,
 ) -> impl IntoResponse {
     match state.game_service.join_game(game_id, auth_user.user_id).await {
+        Ok(participant) => (StatusCode::OK, Json(participant)).into_response(),
+        Err(e) => (StatusCode::BAD_REQUEST, e.to_string()).into_response(),
+    }
+}
+
+pub async fn join_game_by_code(
+    State(state): State<AppState>,
+    auth_user: AuthorizedUser,
+    Json(payload): Json<JoinGameByCodeRequest>,
+) -> impl IntoResponse {
+    match state.game_service.join_game_with_code(payload.code, auth_user.user_id).await {
         Ok(participant) => (StatusCode::OK, Json(participant)).into_response(),
         Err(e) => (StatusCode::BAD_REQUEST, e.to_string()).into_response(),
     }

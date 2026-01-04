@@ -54,6 +54,7 @@ impl From<String> for GameStatus {
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct GameSession {
     pub id: Uuid,
+    pub code: String,
     pub host_user_id: Uuid,
     pub name: String,
     pub status: String, // Kept as string for SQLx matching flexibility, or can be mapped

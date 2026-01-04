@@ -109,11 +109,17 @@ curl -X DELETE http://localhost:3000/games/$env:GAME_ID \
 
 ## 3. Participation
 
-### Join Game
+### Join Game (by Code)
 ```bash
-curl -X POST http://localhost:3000/games/$env:GAME_ID/join \
-  -H "Authorization: Bearer $env:TOKEN"
+curl -X POST http://localhost:3000/games/join \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $env:TOKEN" \
+  -d '{
+    "code": "ABCD"
+  }'
 ```
+
+### Join Game (by ID)
 
 ### List Participants (Check Balances)
 ```bash

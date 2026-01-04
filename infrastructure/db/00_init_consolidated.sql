@@ -18,6 +18,7 @@ CREATE TABLE users (
 -- Status values: 'WAITING', 'ACTIVE', 'PAUSED', 'FINISHED', 'CANCELLED'
 CREATE TABLE game_sessions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    code VARCHAR(4) UNIQUE NOT NULL,
     host_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     name VARCHAR(100) NOT NULL DEFAULT 'Monopoly Game',
     status VARCHAR(20) NOT NULL DEFAULT 'WAITING',

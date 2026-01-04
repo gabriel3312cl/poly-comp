@@ -18,6 +18,7 @@ pub trait UserRepository {
 pub trait GameRepository {
     async fn create(&self, game: GameSession) -> Result<GameSession, anyhow::Error>;
     async fn find_by_id(&self, id: Uuid) -> Result<Option<GameSession>, anyhow::Error>;
+    async fn find_by_code(&self, code: &str) -> Result<Option<GameSession>, anyhow::Error>;
     async fn update(&self, game: GameSession) -> Result<GameSession, anyhow::Error>;
     async fn delete(&self, id: Uuid) -> Result<(), anyhow::Error>;
 }

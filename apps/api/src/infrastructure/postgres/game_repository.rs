@@ -18,8 +18,8 @@ impl GameRepository for PostgresGameRepository {
     async fn create(&self, game: GameSession) -> Result<GameSession, anyhow::Error> {
         let rec = sqlx::query_as::<_, GameSession>(
             r#"
-            INSERT INTO game_sessions (id, host_user_id, name, status, created_at, ended_at)
-            VALUES ($1, $2, $3, $4, $5, $6)
+            INSERT INTO game_sessions (id, host_user_id, name, status, created_at, ended_at, code)
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
             RETURNING *
             "#
         )
@@ -29,6 +29,7 @@ impl GameRepository for PostgresGameRepository {
         .bind(game.status)
         .bind(game.created_at)
         .bind(game.ended_at)
+        .bind(game.code)
         .fetch_one(&self.pool)
         .await?;
 
@@ -38,6 +39,14 @@ impl GameRepository for PostgresGameRepository {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<GameSession>, anyhow::Error> {
         let game = sqlx::query_as::<_, GameSession>("SELECT * FROM game_sessions WHERE id = $1")
             .bind(id)
+            .fetch_optional(&self.pool)
+            .await?;
+        Ok(game)
+    }
+
+    async fn find_by_code(&self, code: &str) -> Result<Option<GameSession>, anyhow::Error> {
+        let game = sqlx::query_as::<_, GameSession>("SELECT * FROM game_sessions WHERE code = $1")
+            .bind(code)
             .fetch_optional(&self.pool)
             .await?;
         Ok(game)

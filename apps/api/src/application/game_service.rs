@@ -1,6 +1,8 @@
 use std::sync::Arc;
 use uuid::Uuid;
 use bigdecimal::BigDecimal;
+use rand::{rng, Rng};
+use rand::distr::Alphanumeric;
 use crate::domain::{
     entities::{GameSession, GameParticipant, GameStatus},
     repositories::{GameRepository, ParticipantRepository},
@@ -20,8 +22,17 @@ impl GameService {
     }
 
     pub async fn create_game(&self, host_user_id: Uuid) -> Result<GameSession, anyhow::Error> {
+        // Generate random 4-char code
+        let code: String = rng()
+            .sample_iter(&Alphanumeric)
+            .take(4)
+            .map(char::from)
+            .collect();
+        let code = code.to_uppercase(); // Ensure uppercase for better UX
+
         let game = GameSession {
             id: Uuid::new_v4(),
+            code,
             host_user_id,
             name: "New Monopoly Game".to_string(), // Default name
             status: GameStatus::WAITING.to_string(),
@@ -35,6 +46,14 @@ impl GameService {
         self.join_game(created_game.id, host_user_id).await?;
 
         Ok(created_game)
+    }
+
+    pub async fn join_game_with_code(&self, code: String, user_id: Uuid) -> Result<GameParticipant, anyhow::Error> {
+        let game = self.game_repo.find_by_code(&code).await?
+            .ok_or_else(|| anyhow::anyhow!("Game not found with code {}", code))?;
+        
+        // Reuse logic by calling join_game with ID
+        self.join_game(game.id, user_id).await
     }
 
     pub async fn join_game(&self, game_id: Uuid, user_id: Uuid) -> Result<GameParticipant, anyhow::Error> {
@@ -134,13 +153,18 @@ mod tests {
         // 1. Expect create game
         mock_game_repo.expect_create()
             .times(1)
-            .returning(move |g| Ok(GameSession { id: game_id, ..g }));
+            .returning(move |mut g| {
+                g.id = game_id;
+                // Code is generated inside create_game, so we just return it as passed
+                Ok(g)
+            });
 
         // 2. Expect find_by_id (called by join_game)
         mock_game_repo.expect_find_by_id()
             .with(eq(game_id))
             .returning(move |_| Ok(Some(GameSession {
                 id: game_id,
+                code: "ABCD".to_string(), // Mock code
                 host_user_id: host_id,
                 name: "New Monopoly Game".to_string(),
                 status: "WAITING".to_string(),
@@ -165,6 +189,7 @@ mod tests {
         assert!(result.is_ok());
         let created = result.unwrap();
         assert_eq!(created.name, "New Monopoly Game");
+        assert_eq!(created.code.len(), 4);
     }
 
     #[tokio::test]
@@ -178,6 +203,7 @@ mod tests {
             .with(eq(game_id))
             .returning(move |_| Ok(Some(GameSession {
                 id: game_id,
+                code: "ABCD".to_string(),
                 host_user_id: Uuid::new_v4(),
                 name: "Game".to_string(),
                 status: "ACTIVE".to_string(),
@@ -203,6 +229,7 @@ mod tests {
             .with(eq(game_id))
             .returning(move |_| Ok(Some(GameSession {
                 id: game_id,
+                code: "ABCD".to_string(),
                 host_user_id: Uuid::new_v4(),
                 name: "Game".to_string(),
                 status: "WAITING".to_string(),

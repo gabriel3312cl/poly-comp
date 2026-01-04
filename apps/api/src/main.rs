@@ -64,6 +64,7 @@ async fn main() -> anyhow::Result<()> {
             .delete(web::handlers::user::delete_user))
         // Game Routes
         .route("/games", axum::routing::post(web::handlers::game::create_game))
+        .route("/games/join", axum::routing::post(web::handlers::game::join_game_by_code))
         .route("/games/:id", axum::routing::get(web::handlers::game::get_game)
             .put(web::handlers::game::update_game)
             .delete(web::handlers::game::delete_game))
