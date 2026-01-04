@@ -1,3 +1,27 @@
+-- ==========================================
+-- BOOTSTRAP SECTION
+-- Only run the CREATE DATABASE / USER parts if they don't exist.
+-- Ideally run as 'postgres' superuser.
+-- ==========================================
+
+-- 1. Create User (if not exists, this command will fail if exists, or use DROP first)
+-- DROP ROLE IF EXISTS monopoly_user;
+-- CREATE USER monopoly_user WITH PASSWORD 'monopoly_pass';
+
+-- 2. Create Database
+-- DROP DATABASE IF EXISTS monopoly_companion;
+-- CREATE DATABASE monopoly_companion OWNER monopoly_user;
+
+-- 3. Connect to Database (PSQL specific command)
+-- \c monopoly_companion
+
+-- 4. Grant Schema Privileges
+-- GRANT ALL ON SCHEMA public TO monopoly_user;
+
+-- ==========================================
+-- SCHEMA INITIALIZATION
+-- ==========================================
+
 -- Enable pgcrypto for UUID generation
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
@@ -59,3 +83,10 @@ CREATE INDEX idx_game_participants_user_id ON game_participants(user_id);
 CREATE INDEX idx_transactions_game_id ON transactions(game_id);
 CREATE INDEX idx_transactions_from_participant ON transactions(from_participant_id);
 CREATE INDEX idx_transactions_to_participant ON transactions(to_participant_id);
+
+-- Ownership / Permissions
+-- Ensure the application user has control over these tables
+ALTER TABLE users OWNER TO monopoly_user;
+ALTER TABLE game_sessions OWNER TO monopoly_user;
+ALTER TABLE game_participants OWNER TO monopoly_user;
+ALTER TABLE transactions OWNER TO monopoly_user;

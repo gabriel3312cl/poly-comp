@@ -1,0 +1,286 @@
+openapi: 3.0.0
+info:
+  title: Monopoly Companion API
+  version: 1.0.0
+  description: Backend API for managing Monopoly game sessions, participants, and real-time banking transactions.
+
+servers:
+  - url: http://localhost:3000
+    description: Local Development Server
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+        first_name:
+          type: string
+        last_name:
+          type: string
+    
+    GameSession:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+          example: "XY8Z"
+        name:
+          type: string
+        status:
+          type: string
+          enum: [WAITING, ACTIVE, FINISHED]
+        host_user_id:
+          type: string
+          format: uuid
+
+    GameParticipant:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        balance:
+          type: number
+          format: float
+          example: 1500.00
+    
+    Transaction:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        amount:
+          type: number
+        description:
+          type: string
+        from_participant_id:
+          type: string
+          format: uuid
+          nullable: true
+        to_participant_id:
+          type: string
+          format: uuid
+          nullable: true
+
+security:
+  - BearerAuth: []
+
+paths:
+  # --- User Management ---
+  /users/register:
+    post:
+      summary: Register a new user
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password, first_name, last_name]
+              properties:
+                username: { type: string }
+                password: { type: string }
+                first_name: { type: string }
+                last_name: { type: string }
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+
+  /users/login:
+    post:
+      summary: Login and retrieve JWT
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username: { type: string }
+                password: { type: string }
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token: { type: string }
+
+  /users/profile:
+    get:
+      summary: Get current user profile
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+    delete:
+      summary: Delete account (and all associated data)
+      responses:
+        '200':
+          description: Account deleted
+
+  # --- Game Management ---
+  /games:
+    post:
+      summary: Create a new game session
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameSession'
+
+  /games/join:
+    post:
+      summary: Join a game using a 4-char code
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code]
+              properties:
+                code: { type: string, example: "XY8Z" }
+      responses:
+        '200':
+          description: Joined successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameParticipant'
+
+  /games/{id}:
+    get:
+      summary: Get game details
+      parameters:
+        - in: path
+          name: id
+          schema: { type: string, format: uuid }
+          required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameSession'
+
+  /games/{id}/join:
+    post:
+      summary: Join a game using UUID
+      parameters:
+        - in: path
+          name: id
+          schema: { type: string, format: uuid }
+          required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameParticipant'
+
+  /games/{id}/participants:
+    get:
+      summary: List all participants and balances
+      parameters:
+        - in: path
+          name: id
+          schema: { type: string, format: uuid }
+          required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GameParticipant'
+
+  # --- Transactions ---
+  /games/{id}/transactions:
+    get:
+      summary: Get transaction history for a game
+      parameters:
+        - in: path
+          name: id
+          schema: { type: string, format: uuid }
+          required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Transaction'
+    post:
+      summary: Perform a money transfer
+      parameters:
+        - in: path
+          name: id
+          schema: { type: string, format: uuid }
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [amount]
+              properties:
+                amount: { type: number }
+                description: { type: string }
+                from_participant_id: { type: string, format: uuid }
+                to_participant_id: { type: string, format: uuid }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transaction'
+
+  /games/{id}/transactions/{tx_id}:
+    delete:
+      summary: Undo/Reverse a transaction
+      parameters:
+        - in: path
+          name: id
+          schema: { type: string, format: uuid }
+          required: true
+        - in: path
+          name: tx_id
+          schema: { type: string, format: uuid }
+          required: true
+      responses:
+        '200':
+          description: Transaction reversed and deleted successfully
