@@ -36,7 +36,7 @@ impl GameService {
             host_user_id,
             name: "New Monopoly Game".to_string(), // Default name
             status: GameStatus::WAITING.to_string(),
-            created_at: None,
+            created_at: Some(time::OffsetDateTime::now_utc()),
             ended_at: None,
         };
 
@@ -136,6 +136,14 @@ impl GameService {
 
     pub async fn get_participants_with_details(&self, game_id: Uuid) -> Result<Vec<crate::domain::entities::ParticipantDetail>, anyhow::Error> {
         self.participant_repo.find_details_by_game_id(game_id).await
+    }
+
+    pub async fn get_hosted_games(&self, user_id: Uuid) -> Result<Vec<GameSession>, anyhow::Error> {
+        self.game_repo.find_hosted_by_user(user_id).await
+    }
+
+    pub async fn get_played_games(&self, user_id: Uuid) -> Result<Vec<GameSession>, anyhow::Error> {
+        self.game_repo.find_played_by_user(user_id).await
     }
 }
 

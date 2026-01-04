@@ -52,6 +52,30 @@ impl GameRepository for PostgresGameRepository {
         Ok(game)
     }
 
+    async fn find_hosted_by_user(&self, user_id: Uuid) -> Result<Vec<GameSession>, anyhow::Error> {
+        let games = sqlx::query_as::<_, GameSession>("SELECT * FROM game_sessions WHERE host_user_id = $1 ORDER BY created_at DESC")
+            .bind(user_id)
+            .fetch_all(&self.pool)
+            .await?;
+        Ok(games)
+    }
+
+    async fn find_played_by_user(&self, user_id: Uuid) -> Result<Vec<GameSession>, anyhow::Error> {
+        let games = sqlx::query_as::<_, GameSession>(
+            r#"
+            SELECT DISTINCT g.* 
+            FROM game_sessions g
+            JOIN game_participants p ON g.id = p.game_id
+            WHERE p.user_id = $1
+            ORDER BY g.created_at DESC
+            "#
+        )
+        .bind(user_id)
+        .fetch_all(&self.pool)
+        .await?;
+        Ok(games)
+    }
+
     async fn update(&self, game: GameSession) -> Result<GameSession, anyhow::Error> {
         let updated = sqlx::query_as::<_, GameSession>(
             r#"

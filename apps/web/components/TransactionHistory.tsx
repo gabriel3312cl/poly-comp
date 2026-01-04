@@ -8,12 +8,15 @@ import {
     IconButton,
     Paper,
     Box,
-    tooltipClasses
+    tooltipClasses,
+    Stack
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import { Transaction } from '@/hooks/useTransactions';
 import { GameParticipant } from '@/hooks/useGame';
+
+import { parseServerDate } from '@/utils/formatters';
 
 interface HistoryProps {
     transactions: Transaction[];
@@ -39,31 +42,46 @@ export default function TransactionHistory({ transactions, participants, onUndo 
 
     return (
         <List sx={{ maxHeight: 300, overflow: 'auto', bgcolor: 'background.paper', borderRadius: 2 }}>
-            {transactions.map((tx) => (
-                <ListItem
-                    key={tx.id}
-                    secondaryAction={
-                        <IconButton edge="end" aria-label="undo" onClick={() => onUndo(tx.id)} size="small" color="default">
-                            <DeleteIcon fontSize="small" />
-                        </IconButton>
-                    }
-                    sx={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}
-                >
-                    <ListItemText
-                        primary={
-                            <Box display="flex" alignItems="center" gap={1}>
-                                <Typography fontWeight="bold" color="text.secondary">{getName(tx.from_participant_id)}</Typography>
-                                <ArrowForwardIcon fontSize="small" color="disabled" />
-                                <Typography fontWeight="bold" color="text.primary">{getName(tx.to_participant_id)}</Typography>
-                                <Typography fontWeight="800" color="secondary.light" ml="auto">
-                                    ${tx.amount.toLocaleString()}
-                                </Typography>
-                            </Box>
+            {transactions.map((tx) => {
+                const timestamp = parseServerDate(tx.created_at);
+                const timeStr = timestamp ? new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Invalid Date';
+
+                return (
+                    <ListItem
+                        key={tx.id}
+                        secondaryAction={
+                            <IconButton edge="end" aria-label="undo" onClick={() => onUndo(tx.id)} size="small" color="default">
+                                <DeleteIcon fontSize="small" />
+                            </IconButton>
                         }
-                        secondary={tx.description || 'Transfer'}
-                    />
-                </ListItem>
-            ))}
+                        sx={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}
+                    >
+                        <ListItemText
+                            primary={
+                                <Box display="flex" alignItems="center" gap={1}>
+                                    <Typography fontWeight="bold" color="text.secondary">{getName(tx.from_participant_id)}</Typography>
+                                    <ArrowForwardIcon fontSize="small" color="disabled" />
+                                    <Typography fontWeight="bold" color="text.primary">{getName(tx.to_participant_id)}</Typography>
+                                    <Typography fontWeight="800" color="secondary.light" ml="auto">
+                                        ${tx.amount.toLocaleString()}
+                                    </Typography>
+                                </Box>
+                            }
+                            secondaryTypographyProps={{ component: 'div' }}
+                            secondary={
+                                <Stack direction="row" justifyContent="space-between" alignItems="center" component="div">
+                                    <Typography variant="caption" color="text.secondary">
+                                        {tx.description || 'Transfer'}
+                                    </Typography>
+                                    <Typography variant="caption" color="text.disabled">
+                                        {timeStr}
+                                    </Typography>
+                                </Stack>
+                            }
+                        />
+                    </ListItem>
+                );
+            })}
         </List>
     );
 }

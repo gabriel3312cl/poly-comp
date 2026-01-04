@@ -70,6 +70,20 @@ impl UserService {
         self.user_repo.update(user).await
     }
 
+    pub async fn update_password(&self, id: Uuid, new_password: String) -> Result<(), anyhow::Error> {
+        let mut user = self.get_user(id).await?;
+        
+        let salt = argon2::password_hash::SaltString::generate(&mut argon2::password_hash::rand_core::OsRng);
+        let argon2 = argon2::Argon2::default();
+        let password_hash = argon2::PasswordHasher::hash_password(&argon2, new_password.as_bytes(), &salt)
+            .map_err(|e| anyhow::anyhow!("Hashing error: {}", e))?
+            .to_string();
+
+        user.password_hash = password_hash;
+        self.user_repo.update(user).await?;
+        Ok(())
+    }
+
     pub async fn delete_account(&self, id: Uuid) -> Result<(), anyhow::Error> {
         self.user_repo.delete(id).await
     }

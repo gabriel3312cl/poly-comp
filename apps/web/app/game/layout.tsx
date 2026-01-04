@@ -16,24 +16,30 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
             <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
                 <AppBar position="static" color="transparent" elevation={0} sx={{ borderBottom: '1px solid #333' }}>
                     <Toolbar>
-                        <Typography variant="h6" component="div" sx={{ flexGrow: 1, fontWeight: 'bold', color: 'primary.main' }}>
-                            MONOPOLY COMPANION
-                        </Typography>
-
-                        <Box display="flex" alignItems="center" gap={2}>
-                            <Box display="flex" alignItems="center" gap={1}>
-                                <AccountCircleIcon color="action" />
-                                <Typography variant="body1" color="text.primary">
-                                    {user?.first_name}
-                                </Typography>
-                            </Box>
-
-                            <Tooltip title="Logout">
-                                <IconButton onClick={() => logout()} color="error">
-                                    <LogoutIcon />
-                                </IconButton>
-                            </Tooltip>
+                        <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', gap: 2 }}>
+                            <Typography variant="h6" fontWeight="bold" color="primary.main" style={{ cursor: 'pointer' }} onClick={() => window.location.href = '/history'}>
+                                MONOPOLY COMPANION
+                            </Typography>
+                            <Button color="inherit" onClick={() => window.location.href = '/history'}>
+                                My Games
+                            </Button>
+                            <Button color="inherit" onClick={() => window.location.href = '/profile'}>
+                                Profile
+                            </Button>
                         </Box>
+
+                        <Box display="flex" alignItems="center" gap={1} ml={2}>
+                            <AccountCircleIcon color="action" />
+                            <Typography variant="body1" color="text.primary">
+                                {user?.first_name}
+                            </Typography>
+                        </Box>
+
+                        <Tooltip title="Logout">
+                            <IconButton onClick={() => logout()} color="error">
+                                <LogoutIcon />
+                            </IconButton>
+                        </Tooltip>
                     </Toolbar>
                 </AppBar>
 
@@ -41,6 +47,6 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
                     {children}
                 </Box>
             </Box>
-        </AuthGuard>
+        </AuthGuard >
     );
 }

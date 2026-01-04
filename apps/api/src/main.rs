@@ -63,6 +63,9 @@ async fn main() -> anyhow::Result<()> {
         .route("/users/profile", axum::routing::get(web::handlers::user::get_current_user)
             .put(web::handlers::user::update_user)
             .delete(web::handlers::user::delete_user))
+        .route("/users/password", axum::routing::put(web::handlers::user::update_password))
+        .route("/users/games/hosted", axum::routing::get(web::handlers::user::get_hosted_games))
+        .route("/users/games/played", axum::routing::get(web::handlers::user::get_played_games))
         // Game Routes
         .route("/games", axum::routing::post(web::handlers::game::create_game))
         .route("/games/join", axum::routing::post(web::handlers::game::join_game_by_code))

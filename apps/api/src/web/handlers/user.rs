@@ -97,3 +97,39 @@ pub async fn delete_user(
         Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
     }
 }
+
+#[derive(Deserialize)]
+pub struct UpdatePasswordRequest {
+    pub password: String,
+}
+
+pub async fn update_password(
+    State(state): State<AppState>,
+    auth_user: AuthorizedUser,
+    Json(payload): Json<UpdatePasswordRequest>,
+) -> impl IntoResponse {
+    match state.user_service.update_password(auth_user.user_id, payload.password).await {
+        Ok(_) => (StatusCode::OK, "Password updated").into_response(),
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
+    }
+}
+
+pub async fn get_hosted_games(
+    State(state): State<AppState>,
+    auth_user: AuthorizedUser,
+) -> impl IntoResponse {
+    match state.game_service.get_hosted_games(auth_user.user_id).await {
+        Ok(games) => (StatusCode::OK, Json(games)).into_response(),
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
+    }
+}
+
+pub async fn get_played_games(
+    State(state): State<AppState>,
+    auth_user: AuthorizedUser,
+) -> impl IntoResponse {
+    match state.game_service.get_played_games(auth_user.user_id).await {
+        Ok(games) => (StatusCode::OK, Json(games)).into_response(),
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
+    }
+}

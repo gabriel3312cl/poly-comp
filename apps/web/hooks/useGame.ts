@@ -78,7 +78,7 @@ export const useGetGame = (gameId: string) => {
             return data as GameSession;
         },
         enabled: !!gameId,
-        refetchInterval: 5000, // Polling for status updates?
+        refetchInterval: 5000, // Polling for status updates
     });
 };
 
@@ -90,7 +90,7 @@ export const useGetParticipants = (gameId: string) => {
             return data as GameParticipant[];
         },
         enabled: !!gameId,
-        refetchInterval: 3000, // Real-time-ish updates as requested ("auto refrescar")
+        refetchInterval: 6000, // Reduced frequency
     });
 };
 
@@ -102,6 +102,53 @@ export const useLeaveGame = (gameId: string) => {
         },
         onSuccess: () => {
             router.push('/game');
+        },
+    });
+};
+
+export const useGetHostedGames = () => {
+    return useQuery({
+        queryKey: ['games', 'hosted'],
+        queryFn: async () => {
+            const { data } = await api.get('/users/games/hosted');
+            return data as GameSession[];
+        },
+    });
+};
+
+export const useGetPlayedGames = () => {
+    return useQuery({
+        queryKey: ['games', 'played'],
+        queryFn: async () => {
+            const { data } = await api.get('/users/games/played');
+            return data as GameSession[];
+        },
+    });
+};
+
+export const useUpdateGame = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async ({ id, data }: { id: string; data: { name?: string; status?: string } }) => {
+            const res = await api.put(`/games/${id}`, data);
+            return res.data;
+        },
+        onSuccess: (data: GameSession) => {
+            queryClient.invalidateQueries({ queryKey: ['game', data.id] });
+        }
+    });
+};
+
+export const useDeleteGame = () => {
+    const router = useRouter();
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async (gameId: string) => {
+            await api.delete(`/games/${gameId}`);
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['games'] });
+            router.push('/history?deleted=true');
         },
     });
 };

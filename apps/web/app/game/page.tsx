@@ -126,19 +126,8 @@ export default function GameDashboard() {
             </Grid>
 
             <Divider sx={{ my: 8 }} />
+            {/* Delete Account moved to Profile Page */}
 
-            <Box textAlign="center">
-                <Button
-                    variant="text"
-                    color="error"
-                    startIcon={<DeleteIcon />}
-                    onClick={() => setOpenDelete(true)}
-                >
-                    Delete Account
-                </Button>
-            </Box>
-
-            {/* Delete Confirmation Dialog */}
             <Dialog
                 open={openDelete}
                 onClose={() => setOpenDelete(false)}

@@ -10,10 +10,11 @@ import {
     Chip,
     Fab,
     useTheme,
-    useMediaQuery
+    useMediaQuery,
+    Divider
 } from '@mui/material';
 import { useParams } from 'next/navigation';
-import { useGetGame, useGetParticipants, useLeaveGame } from '@/hooks/useGame';
+import { useGetGame, useGetParticipants, useLeaveGame, useDeleteGame } from '@/hooks/useGame';
 import { useGetTransactions, usePerformTransfer, useUndoTransaction } from '@/hooks/useTransactions';
 import ParticipantList from '@/components/ParticipantList';
 import TransactionHistory from '@/components/TransactionHistory';
@@ -22,7 +23,27 @@ import { useState } from 'react';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance'; // Bank Icon
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import ExitToAppIcon from '@mui/icons-material/ExitToApp';
+import DeleteIcon from '@mui/icons-material/Delete';
+import { parseServerDate } from '@/utils/formatters';
 import { useAuthStore } from '@/store/authStore';
+import SettingsIcon from '@mui/icons-material/Settings';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import PauseIcon from '@mui/icons-material/Pause';
+import StopIcon from '@mui/icons-material/Stop';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import {
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    TextField,
+    Select,
+    MenuItem,
+    FormControl,
+    InputLabel,
+    DialogActions
+} from '@mui/material';
+import { useUpdateGame } from '@/hooks/useGame';
+import { useEffect } from 'react';
 
 export default function GameSessionPage() {
     const { id } = useParams() as { id: string };
@@ -36,17 +57,67 @@ export default function GameSessionPage() {
     // Mutations
     const { mutate: transfer, isPending: transferring } = usePerformTransfer();
     const { mutate: undo } = useUndoTransaction();
+    const { mutate: deleteGame } = useDeleteGame();
     const { mutate: leave } = useLeaveGame(id);
+    const { mutate: updateGame } = useUpdateGame();
+
+    const handleDeleteGame = () => {
+        if (confirm('Are you sure you want to delete this game session? This cannot be undone.')) {
+            deleteGame(id);
+        }
+    };
+
 
     // UI State
+
     const [transferType, setTransferType] = useState<'PAY' | 'CHARGE' | 'BANK_PAY' | 'BANK_RECEIVE' | null>(null);
     const [targetId, setTargetId] = useState<string | null>(null);
+    const [settingsOpen, setSettingsOpen] = useState(false);
+    const [editName, setEditName] = useState('');
+    const [editStatus, setEditStatus] = useState('');
+    const [elapsedTime, setElapsedTime] = useState('00:00:00');
 
     // Find info
     const me = participants.find(p => p.user_id === user?.id);
     const target = participants.find(p => p.id === targetId);
     const theme = useTheme();
-    // const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+    const isHost = game?.host_user_id === user?.id;
+
+    // Timer Effect
+    // Timer Effect
+    // Timer Effect
+    useEffect(() => {
+        if (!game?.created_at) return;
+        const interval = setInterval(() => {
+            const startDateTs = parseServerDate(game.created_at);
+            if (!startDateTs) {
+                setElapsedTime('00:00:00');
+                return;
+            }
+
+            const now = new Date().getTime();
+            const diff = Math.max(0, Math.floor((now - startDateTs) / 1000));
+
+            const h = Math.floor(diff / 3600);
+            const m = Math.floor((diff % 3600) / 60);
+            const s = diff % 60;
+            setElapsedTime(`${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`);
+        }, 1000);
+        return () => clearInterval(interval);
+    }, [game?.created_at]);
+
+    // Sync Settings form
+    useEffect(() => {
+        if (game) {
+            setEditName(game.name);
+            setEditStatus(game.status);
+        }
+    }, [game]);
+
+    const handleSaveSettings = () => {
+        updateGame({ id, data: { name: editName, status: editStatus } });
+        setSettingsOpen(false);
+    };
 
     const handleTransferClick = (tId: string, type: 'PAY' | 'CHARGE') => {
         setTargetId(tId);
@@ -83,7 +154,12 @@ export default function GameSessionPage() {
         }
 
         transfer(payload, {
-            onSuccess: () => setTransferType(null)
+            onSuccess: () => {
+                setTransferType(null);
+                // Play Cash Sound
+                const audio = new Audio('/cash.mp3');
+                audio.play().catch(e => console.error("Audio play failed", e));
+            }
         });
     };
 
@@ -92,10 +168,16 @@ export default function GameSessionPage() {
             {/* Header Info */}
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={4} flexWrap="wrap" gap={2}>
                 <Box>
-                    <Typography variant="h4" fontWeight="900" color="primary.main">
-                        {game?.name || 'Game Session'}
-                    </Typography>
-                    <Stack direction="row" spacing={1} alignItems="center">
+                    <Stack direction="row" alignItems="center" spacing={2}>
+                        <Button variant="outlined" startIcon={<ArrowForwardIcon style={{ transform: 'rotate(180deg)' }} />} onClick={() => window.location.href = '/history'}>
+                            Main Menu
+                        </Button>
+                        <Divider orientation="vertical" flexItem />
+                        <Typography variant="h4" fontWeight="900" color="primary.main">
+                            {game?.name || 'Game Session'}
+                        </Typography>
+                    </Stack>
+                    <Stack direction="row" spacing={1} alignItems="center" mt={1}>
                         <Chip
                             label={`CODE: ${game?.code}`}
                             color="secondary"
@@ -104,13 +186,26 @@ export default function GameSessionPage() {
                             icon={<ContentCopyIcon fontSize="small" />}
                             sx={{ fontWeight: 'bold', fontSize: '1.2rem', py: 2 }}
                         />
-                        <Chip label={game?.status} size="small" />
+                        <Chip label={game?.status} size="small" color={game?.status === 'ACTIVE' ? 'success' : 'warning'} />
+                        <Chip label={elapsedTime} size="small" variant="outlined" sx={{ fontFamily: 'monospace' }} />
                     </Stack>
                 </Box>
 
-                <Button color="error" startIcon={<ExitToAppIcon />} onClick={() => leave()}>
-                    Leave Game
-                </Button>
+                <Stack direction="row" spacing={2}>
+                    {isHost && (
+                        <Button
+                            variant="contained"
+                            color="warning"
+                            startIcon={<SettingsIcon />}
+                            onClick={() => setSettingsOpen(true)}
+                        >
+                            Host Controls
+                        </Button>
+                    )}
+                    <Button color="error" startIcon={<ExitToAppIcon />} onClick={() => leave()}>
+                        Leave Game
+                    </Button>
+                </Stack>
             </Box>
 
             {/* Main Grid */}
@@ -170,6 +265,47 @@ export default function GameSessionPage() {
                 targetName={target ? target.first_name : 'Bank'}
                 loading={transferring}
             />
+
+            {/* Host Settings Dialog */}
+            <Dialog open={settingsOpen} onClose={() => setSettingsOpen(false)}>
+                <DialogTitle>Game Settings</DialogTitle>
+                <DialogContent>
+                    <Stack spacing={3} sx={{ mt: 1, minWidth: 300 }}>
+                        <TextField
+                            label="Game Name"
+                            fullWidth
+                            value={editName}
+                            onChange={(e) => setEditName(e.target.value)}
+                        />
+                        <FormControl fullWidth>
+                            <InputLabel>Status</InputLabel>
+                            <Select
+                                value={editStatus}
+                                label="Status"
+                                onChange={(e) => setEditStatus(e.target.value)}
+                            >
+                                <MenuItem value="WAITING">WAITING (Lobby)</MenuItem>
+                                <MenuItem value="ACTIVE">ACTIVE (Playing)</MenuItem>
+                                <MenuItem value="PAUSED">PAUSED</MenuItem>
+                                <MenuItem value="FINISHED">FINISHED</MenuItem>
+                            </Select>
+                        </FormControl>
+                    </Stack>
+                </DialogContent>
+                <DialogActions sx={{ justifyContent: 'space-between', px: 3, pb: 2 }}>
+                    <Button
+                        onClick={handleDeleteGame}
+                        color="error"
+                        startIcon={<DeleteIcon />}
+                    >
+                        Delete Session
+                    </Button>
+                    <Box>
+                        <Button onClick={() => setSettingsOpen(false)} sx={{ mr: 1 }}>Cancel</Button>
+                        <Button onClick={handleSaveSettings} variant="contained">Save</Button>
+                    </Box>
+                </DialogActions>
+            </Dialog>
         </Container>
     );
 }

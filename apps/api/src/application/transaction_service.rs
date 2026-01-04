@@ -29,7 +29,7 @@ impl TransactionService {
             to_participant_id: to_pid,
             amount,
             description,
-            created_at: None,
+            created_at: Some(time::OffsetDateTime::now_utc()),
         };
 
         self.transaction_repo.execute_transfer(tx).await

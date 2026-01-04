@@ -62,3 +62,35 @@ export const useLogout = () => {
         },
     });
 };
+
+export const useUpdateProfile = () => {
+    return useMutation({
+        mutationFn: async (data: { first_name: string; last_name: string }) => {
+            const res = await api.put('/users/profile', data);
+            return res.data;
+        },
+    });
+};
+
+export const useUpdatePassword = () => {
+    return useMutation({
+        mutationFn: async (data: { password: string }) => {
+            await api.put('/users/password', data);
+        },
+    });
+};
+
+export const useDeleteAccount = () => {
+    const logout = useAuthStore((state) => state.logout);
+    const router = useRouter();
+
+    return useMutation({
+        mutationFn: async () => {
+            await api.delete('/users/profile');
+        },
+        onSuccess: () => {
+            logout();
+            router.push('/login');
+        },
+    });
+};

@@ -57,10 +57,11 @@ impl UserRepository for PostgresUserRepository {
 
     async fn update(&self, user: User) -> Result<User, anyhow::Error> {
         let updated_user = sqlx::query_as::<_, User>(
-            "UPDATE users SET first_name = $1, last_name = $2 WHERE id = $3 RETURNING *"
+            "UPDATE users SET first_name = $1, last_name = $2, password_hash = $3 WHERE id = $4 RETURNING *"
         )
         .bind(user.first_name)
         .bind(user.last_name)
+        .bind(user.password_hash)
         .bind(user.id)
         .fetch_one(&self.pool)
         .await?;
