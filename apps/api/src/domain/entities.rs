@@ -10,6 +10,8 @@ pub struct User {
     pub username: String,
     pub first_name: String,
     pub last_name: String,
+    #[serde(skip)]
+    pub password_hash: String,
     pub created_at: Option<OffsetDateTime>,
     pub last_logout_at: Option<OffsetDateTime>,
 }

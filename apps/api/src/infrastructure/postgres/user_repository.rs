@@ -18,8 +18,8 @@ impl UserRepository for PostgresUserRepository {
     async fn create(&self, user: User) -> Result<User, anyhow::Error> {
         let rec = sqlx::query_as::<_, User>(
             r#"
-            INSERT INTO users (id, username, first_name, last_name)
-            VALUES ($1, $2, $3, $4)
+            INSERT INTO users (id, username, first_name, last_name, password_hash)
+            VALUES ($1, $2, $3, $4, $5)
             RETURNING *
             "#
         )
@@ -27,6 +27,7 @@ impl UserRepository for PostgresUserRepository {
         .bind(user.username)
         .bind(user.first_name)
         .bind(user.last_name)
+        .bind(user.password_hash)
         .fetch_one(&self.pool)
         .await?;
 

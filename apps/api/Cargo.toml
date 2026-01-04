@@ -19,6 +19,7 @@ tower-http = { version = "0.5", features = ["cors", "trace"] }
 uuid = { version = "1.0", features = ["serde", "v4"] }
 time = { version = "0.3", features = ["serde", "parsing"] }
 bigdecimal = { version = "0.4.10", features = ["serde"] }
+argon2 = { version = "0.5", features = ["std"] }
 async-trait = "0.1.89"
 
 [dev-dependencies]

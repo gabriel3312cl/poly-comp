@@ -10,6 +10,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Deserialize)]
 pub struct RegisterUserRequest {
     pub username: String,
+    pub password: String,
     pub first_name: String,
     pub last_name: String,
 }
@@ -23,6 +24,7 @@ pub struct UpdateUserRequest {
 #[derive(Deserialize)]
 pub struct LoginRequest {
     pub username: String,
+    pub password: String,
 }
 
 #[derive(Serialize)]
@@ -34,7 +36,7 @@ pub async fn login_user(
     State(state): State<AppState>,
     Json(payload): Json<LoginRequest>,
 ) -> impl IntoResponse {
-     match state.user_service.login(payload.username).await {
+     match state.user_service.login(payload.username, payload.password).await {
         Ok(user) => {
              match crate::shared::auth::Auth::generate_token(user.id, &state.config.jwt_secret) {
                 Ok(token) => (StatusCode::OK, Json(LoginResponse { token })).into_response(),
@@ -59,7 +61,7 @@ pub async fn register_user(
     State(state): State<AppState>,
     Json(payload): Json<RegisterUserRequest>,
 ) -> impl IntoResponse {
-    match state.user_service.register(payload.username, payload.first_name, payload.last_name).await {
+    match state.user_service.register(payload.username, payload.password, payload.first_name, payload.last_name).await {
         Ok(user) => (StatusCode::CREATED, Json(user)).into_response(),
         Err(e) => (StatusCode::BAD_REQUEST, e.to_string()).into_response(),
     }

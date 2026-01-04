@@ -14,17 +14,25 @@ impl UserService {
         Self { user_repo }
     }
 
-    pub async fn register(&self, username: String, first_name: String, last_name: String) -> Result<User, anyhow::Error> {
+    pub async fn register(&self, username: String, password: String, first_name: String, last_name: String) -> Result<User, anyhow::Error> {
         // Check if user exists
         if let Some(_) = self.user_repo.find_by_username(&username).await? {
             return Err(anyhow::anyhow!("Username already exists"));
         }
+
+        // Hash Logic
+        let salt = argon2::password_hash::SaltString::generate(&mut argon2::password_hash::rand_core::OsRng);
+        let argon2 = argon2::Argon2::default();
+        let password_hash = argon2::PasswordHasher::hash_password(&argon2, password.as_bytes(), &salt)
+            .map_err(|e| anyhow::anyhow!("Hashing error: {}", e))?
+            .to_string();
 
         let user = User {
             id: Uuid::new_v4(),
             username,
             first_name,
             last_name,
+            password_hash,
             created_at: None, // Let DB handle default
             last_logout_at: None,
         };
@@ -32,10 +40,16 @@ impl UserService {
         self.user_repo.create(user).await
     }
 
-    pub async fn login(&self, username: String) -> Result<User, anyhow::Error> {
+    pub async fn login(&self, username: String, password: String) -> Result<User, anyhow::Error> {
         let user = self.user_repo.find_by_username(&username).await?
             .ok_or_else(|| anyhow::anyhow!("User not found"))?;
         
+        let parsed_hash = argon2::PasswordHash::new(&user.password_hash)
+            .map_err(|e| anyhow::anyhow!("Invalid hash format: {}", e))?;
+        
+        argon2::PasswordVerifier::verify_password(&argon2::Argon2::default(), password.as_bytes(), &parsed_hash)
+             .map_err(|_| anyhow::anyhow!("Invalid password"))?;
+
         Ok(user)
     }
 
@@ -83,7 +97,7 @@ mod tests {
             .returning(|u| Ok(u));
 
         let service = UserService::new(Arc::new(mock_repo));
-        let result = service.register("testuser".to_string(), "Test".to_string(), "User".to_string()).await;
+        let result = service.register("testuser".to_string(), "pass123".to_string(), "Test".to_string(), "User".to_string()).await;
 
         assert!(result.is_ok());
         let user = result.unwrap();
@@ -110,7 +124,15 @@ mod tests {
         // Expect find_by_id for get_user
         mock_repo.expect_find_by_id()
              .with(eq(uid))
-             .returning(move |_| Ok(Some(User { id: uid, username: "u".to_string(), first_name: "O".to_string(), last_name: "O".to_string(), created_at: None, last_logout_at: None })));
+             .returning(move |_| Ok(Some(User { 
+                 id: uid, 
+                 username: "u".to_string(), 
+                 first_name: "O".to_string(), 
+                 last_name: "O".to_string(), 
+                 created_at: None, 
+                 last_logout_at: None,
+                 password_hash: "hash".to_string() 
+            })));
 
         // Expect update
         mock_repo.expect_update()
@@ -137,12 +159,13 @@ mod tests {
                 username: "existing".to_string(),
                 first_name: "A".to_string(),
                 last_name: "B".to_string(),
+                password_hash: "pass".to_string(),
                 created_at: None,
                 last_logout_at: None,
             })));
 
         let service = UserService::new(Arc::new(mock_repo));
-        let result = service.register("existing".to_string(), "Test".to_string(), "User".to_string()).await;
+        let result = service.register("existing".to_string(), "pass".to_string(), "Test".to_string(), "User".to_string()).await;
 
         assert!(result.is_err());
         assert_eq!(result.unwrap_err().to_string(), "Username already exists");
