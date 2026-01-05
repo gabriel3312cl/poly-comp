@@ -11,9 +11,11 @@ import {
     keyframes
 } from '@mui/material';
 import DataUsageIcon from '@mui/icons-material/DataUsage'; // Wheel icon equivalent
+import EmojiEventsIcon from '@mui/icons-material/EmojiEvents'; // Trophy icon
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { usePerformTransfer, useClaimJackpot } from '@/hooks/useTransactions';
+import ConfirmDialog from './ConfirmDialog';
 
 type OptionType = 'red' | 'green';
 
@@ -49,6 +51,10 @@ export default function RouletteTool({ gameId, myParticipantId, jackpotBalance }
     const [isSpinning, setIsSpinning] = useState(false);
     const [selectedOption, setSelectedOption] = useState<RouletteOption | null>(null);
     const [displayIndex, setDisplayIndex] = useState(0);
+
+    // Dialog states
+    const [confirmSpinOpen, setConfirmSpinOpen] = useState(false);
+    const [confirmJackpotOpen, setConfirmJackpotOpen] = useState(false);
 
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -153,11 +159,7 @@ export default function RouletteTool({ gameId, myParticipantId, jackpotBalance }
                                     ? selectedOption.label
                                     : 'Press Spin'}
                         </Typography>
-                        {!isSpinning && !selectedOption && (
-                            <Typography variant="caption" sx={{ opacity: 0.8, mt: 1 }}>
-                                Jackpot Pool: ${jackpotBalance.toLocaleString()}
-                            </Typography>
-                        )}
+
                     </Box>
 
                     <Button
@@ -165,13 +167,45 @@ export default function RouletteTool({ gameId, myParticipantId, jackpotBalance }
                         color="secondary"
                         size="large"
                         fullWidth
-                        onClick={handleSpin}
+                        onClick={() => setConfirmSpinOpen(true)}
                         disabled={isSpinning}
                     >
                         {isSpinning ? 'Spinning...' : 'SPIN ROULETTE'}
                     </Button>
+
+                    <Button
+                        variant="outlined"
+                        color="success"
+                        startIcon={<EmojiEventsIcon />}
+                        fullWidth
+                        sx={{ mt: 2 }}
+                        onClick={() => setConfirmJackpotOpen(true)}
+                        disabled={isSpinning || jackpotBalance <= 0}
+                    >
+                        WIN JACKPOT MANUALLY
+                    </Button>
                 </Box>
             </Collapse>
+
+            {/* Confirmation Dialogs */}
+            <ConfirmDialog
+                open={confirmSpinOpen}
+                title="Spin the Roulette?"
+                description="This will roll the wheel and may result in winning the jackpot or paying fees."
+                confirmText="Spin It!"
+                onClose={() => setConfirmSpinOpen(false)}
+                onConfirm={handleSpin}
+            />
+
+            <ConfirmDialog
+                open={confirmJackpotOpen}
+                title="Claim Jackpot?"
+                description={`Are you sure you want to manually claim the jackpot of $${jackpotBalance.toLocaleString()}? This is usually done by winning the roulette.`}
+                confirmText="Claim Jackpot"
+                severity="success"
+                onClose={() => setConfirmJackpotOpen(false)}
+                onConfirm={() => claimJackpotMutation.mutate({ gameId })}
+            />
         </Paper>
     );
 }

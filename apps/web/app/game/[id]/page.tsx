@@ -29,6 +29,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import { parseServerDate } from '@/utils/formatters';
 import { useAuthStore } from '@/store/authStore';
 import DiceSection from '@/components/DiceSection';
+import SpecialDiceTool from '@/components/SpecialDiceTool';
 import SettingsIcon from '@mui/icons-material/Settings';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import PauseIcon from '@mui/icons-material/Pause';
@@ -60,6 +61,48 @@ export default function GameSessionPage() {
     // Mutations
     const myParticipant = participants.find((p: any) => p.user_id === user?.id);
     const { mutate: transfer, isPending: transferring } = usePerformTransfer();
+
+    // Sound Effect for Incoming Payments
+    useEffect(() => {
+        if (transactions.length > 0 && myParticipant) {
+            const latest = transactions[0]; // Assuming sorted by date DESC (backend usually does this)
+            // Check if I am the receiver and it's a recent update (simplistic check: we rely on data refresh)
+            // Better approach: track the ID of the last seen transaction.
+        }
+    }, [transactions, myParticipant]);
+
+    // Actually, to do this correctly, I need state to track the last known top transaction ID.
+    const [lastTxId, setLastTxId] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (transactions.length > 0 && myParticipant) {
+            const latest = transactions[0];
+
+            // Debug logs
+            // console.log('Latest TX:', latest.id, 'Last TX:', lastTxId);
+
+            // Initial load
+            if (lastTxId === null) {
+                setLastTxId(latest.id);
+                return;
+            }
+
+            if (latest.id !== lastTxId) {
+                // New transaction detected
+                setLastTxId(latest.id);
+
+                // Check if I am the receiver AND it's from another user
+                if (latest.to_participant_id === myParticipant.id && latest.from_participant_id) {
+                    // Verify it's recent (created within last minute) to avoid playing on stale data revalidations?
+                    // Actually, if ID changed, it IS new because query is sorted DESC.
+
+                    console.log('Playing notification sound for TX:', latest.id);
+                    new Audio('/notification.mp3').play().catch(e => console.error('Error playing notification:', e));
+                }
+            }
+        }
+    }, [transactions, myParticipant, lastTxId]);
+
     const { mutate: undo } = useUndoTransaction();
     const { mutate: deleteGame } = useDeleteGame();
     const { mutate: leave } = useLeaveGame(id);
@@ -248,6 +291,9 @@ export default function GameSessionPage() {
 
                     {/* Dice Roller */}
                     <DiceSection gameId={id} />
+
+                    {/* Special Dice */}
+                    <SpecialDiceTool gameId={id} myParticipantId={myParticipant?.id} />
                 </Grid>
 
                 {/* History Column */}

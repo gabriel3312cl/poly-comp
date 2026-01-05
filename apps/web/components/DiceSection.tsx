@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
     Box,
     Typography,
@@ -26,6 +26,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { useRollDice, useGetDiceHistory, DiceHistoryItem } from '@/hooks/useDice';
 import { parseServerDate } from '@/utils/formatters';
+import ConfirmDialog from './ConfirmDialog';
 
 interface DiceSectionProps {
     gameId: string;
@@ -40,12 +41,35 @@ export default function DiceSection({ gameId }: DiceSectionProps) {
     const { mutate: roll, isPending: rolling, data: lastRoll } = useRollDice(gameId);
     const { data: history = [] } = useGetDiceHistory(gameId);
 
-    const handleRoll = () => {
-        // Play sound
+    const [confirmRollOpen, setConfirmRollOpen] = useState(false);
+
+    // Effect to play sound on new roll
+    useEffect(() => {
+        if (lastRoll) {
+            // Check for doubles (all dice have same value)
+            const isDoubles = lastRoll.results.every(val => val === lastRoll.results[0]) && lastRoll.results.length > 1;
+
+            if (isDoubles) {
+                new Audio('/doubles.mp3').play().catch(e => console.error('Error playing doubles sound:', e));
+            } else {
+                // Standard dice sound (or maybe keep it on button click?)
+                // User requested doubles sound specifically for doubles.
+                // The standard dice sound was already there on click.
+            }
+        }
+    }, [lastRoll]);
+
+    const handleRollClick = () => {
+        setConfirmRollOpen(true);
+    };
+
+    const handleConfirmRoll = () => {
+        // Play standard roll sound immediately
         const audio = new Audio('/dice.mp3');
         audio.play().catch(err => console.error('Failed to play dice sound:', err));
 
         roll({ sides, count });
+        setConfirmRollOpen(false);
     };
 
     const handleSidesChange = (event: React.MouseEvent<HTMLElement>, newAlignment: number | null) => {
@@ -109,7 +133,7 @@ export default function DiceSection({ gameId }: DiceSectionProps) {
                             variant="contained"
                             fullWidth
                             size="large"
-                            onClick={handleRoll}
+                            onClick={handleRollClick}
                             disabled={rolling}
                             startIcon={<CasinoIcon />}
                             sx={{
@@ -162,6 +186,8 @@ export default function DiceSection({ gameId }: DiceSectionProps) {
                                         return (
                                             <ListItem key={item.roll.id || idx} divider>
                                                 <ListItemText
+                                                    primaryTypographyProps={{ component: 'div' }}
+                                                    secondaryTypographyProps={{ component: 'div' }}
                                                     primary={
                                                         <Stack direction="row" justifyContent="space-between" alignItems="center">
                                                             <Typography fontWeight="bold" variant="body2">{item.user_name}</Typography>
@@ -186,6 +212,15 @@ export default function DiceSection({ gameId }: DiceSectionProps) {
                     </Box>
                 </Stack>
             </CardContent>
+
+            <ConfirmDialog
+                open={confirmRollOpen}
+                title="Roll Dice?"
+                description={`Are you sure you want to roll ${count}d${sides}?`}
+                onConfirm={handleConfirmRoll}
+                onClose={() => setConfirmRollOpen(false)}
+                confirmText="Roll"
+            />
         </Card>
     );
 }
