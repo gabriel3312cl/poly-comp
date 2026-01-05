@@ -20,6 +20,7 @@ import ParticipantList from '@/components/ParticipantList';
 import TransactionHistory from '@/components/TransactionHistory';
 import TransferDialog from '@/components/TransferDialog';
 import CalculatorTool from '@/components/CalculatorTool';
+import RouletteTool from '@/components/RouletteTool';
 import { useState } from 'react';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance'; // Bank Icon
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
@@ -250,6 +251,7 @@ export default function GameSessionPage() {
 
                 {/* History Column */}
                 <Grid size={{ xs: 12, md: 4 }}>
+                    <RouletteTool />
                     <CalculatorTool />
 
                     <TransactionHistory
