@@ -91,10 +91,8 @@ impl TransactionRepository for PostgresTransactionRepository {
              .fetch_optional(&mut *tx)
              .await?;
 
-             if let Some((balance,)) = balance_row {
-                 if balance < transaction.amount {
-                     return Err(anyhow::anyhow!("Insufficient funds"));
-                 }
+             if let Some((_balance,)) = balance_row {
+                 // Allow negative balance, so no check here.
                  
                  // Deduct
                  sqlx::query("UPDATE game_participants SET balance = balance - $1 WHERE id = $2")

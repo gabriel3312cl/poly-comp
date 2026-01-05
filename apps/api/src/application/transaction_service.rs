@@ -20,7 +20,7 @@ impl TransactionService {
     }
 
     pub async fn transfer(&self, game_id: Uuid, from_pid: Option<Uuid>, to_pid: Option<Uuid>, amount: BigDecimal, description: Option<String>) -> Result<Transaction, anyhow::Error> {
-        // TODO: Validate balance if from_pid is not None (Bank has infinite money)
+        // Balance validation removed to allow negative balances (debt)
         
         let tx = Transaction {
             id: Uuid::new_v4(),

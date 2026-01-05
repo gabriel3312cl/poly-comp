@@ -17,7 +17,8 @@ import {
     ListItemText,
     Chip,
     Divider,
-    Paper
+    Paper,
+    Collapse
 } from '@mui/material';
 import CasinoIcon from '@mui/icons-material/Casino';
 import HistoryIcon from '@mui/icons-material/History';
@@ -31,11 +32,16 @@ interface DiceSectionProps {
 export default function DiceSection({ gameId }: DiceSectionProps) {
     const [sides, setSides] = useState<number>(6);
     const [count, setCount] = useState<number>(2);
+    const [showConfig, setShowConfig] = useState<boolean>(false);
 
     const { mutate: roll, isPending: rolling, data: lastRoll } = useRollDice(gameId);
     const { data: history = [] } = useGetDiceHistory(gameId);
 
     const handleRoll = () => {
+        // Play sound
+        const audio = new Audio('/dice.mp3');
+        audio.play().catch(err => console.error('Failed to play dice sound:', err));
+
         roll({ sides, count });
     };
 
@@ -48,40 +54,53 @@ export default function DiceSection({ gameId }: DiceSectionProps) {
     return (
         <Card sx={{ mt: 4, borderRadius: 3, border: '1px solid rgba(255,255,255,0.1)' }}>
             <CardContent>
-                <Stack direction="row" alignItems="center" gap={1} mb={2}>
-                    <CasinoIcon color="secondary" />
-                    <Typography variant="h6" fontWeight="bold">Dice Roller</Typography>
+                <Stack direction="row" alignItems="center" justifyContent="space-between" mb={2}>
+                    <Stack direction="row" alignItems="center" gap={1}>
+                        <CasinoIcon color="secondary" />
+                        <Typography variant="h6" fontWeight="bold">Dice Roller</Typography>
+                    </Stack>
+                    <Button
+                        size="small"
+                        onClick={() => setShowConfig(!showConfig)}
+                        color="inherit"
+                    >
+                        {showConfig ? 'Hide Config' : 'Configure'}
+                    </Button>
                 </Stack>
 
                 <Stack spacing={3} direction={{ xs: 'column', md: 'row' }}>
                     {/* Controls */}
                     <Box flex={1}>
-                        <Typography gutterBottom variant="caption" color="text.secondary">Dice Type</Typography>
-                        <ToggleButtonGroup
-                            value={sides}
-                            exclusive
-                            onChange={handleSidesChange}
-                            aria-label="dice sides"
-                            fullWidth
-                            size="small"
-                            sx={{ mb: 3 }}
-                        >
-                            <ToggleButton value={6}>D6</ToggleButton>
-                            <ToggleButton value={12}>D12</ToggleButton>
-                            <ToggleButton value={24}>D24</ToggleButton>
-                        </ToggleButtonGroup>
+                        <Collapse in={showConfig}>
+                            <Box mb={3} p={2} border="1px dashed rgba(255,255,255,0.2)" borderRadius={2}>
+                                <Typography gutterBottom variant="caption" color="text.secondary">Dice Type</Typography>
+                                <ToggleButtonGroup
+                                    value={sides}
+                                    exclusive
+                                    onChange={handleSidesChange}
+                                    aria-label="dice sides"
+                                    fullWidth
+                                    size="small"
+                                    sx={{ mb: 3 }}
+                                >
+                                    <ToggleButton value={6}>D6</ToggleButton>
+                                    <ToggleButton value={12}>D12</ToggleButton>
+                                    <ToggleButton value={24}>D24</ToggleButton>
+                                </ToggleButtonGroup>
 
-                        <Typography gutterBottom variant="caption" color="text.secondary">Count: {count}</Typography>
-                        <Slider
-                            value={count}
-                            onChange={(_, val) => setCount(val as number)}
-                            min={1}
-                            max={8}
-                            step={1}
-                            marks
-                            valueLabelDisplay="auto"
-                            sx={{ mb: 3 }}
-                        />
+                                <Typography gutterBottom variant="caption" color="text.secondary">Count: {count}</Typography>
+                                <Slider
+                                    value={count}
+                                    onChange={(_, val) => setCount(val as number)}
+                                    min={1}
+                                    max={8}
+                                    step={1}
+                                    marks
+                                    valueLabelDisplay="auto"
+                                    sx={{ mb: 1 }}
+                                />
+                            </Box>
+                        </Collapse>
 
                         <Button
                             variant="contained"
