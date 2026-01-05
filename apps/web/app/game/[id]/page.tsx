@@ -58,6 +58,7 @@ export default function GameSessionPage() {
     const { data: transactions = [] } = useGetTransactions(id);
 
     // Mutations
+    const myParticipant = participants.find((p: any) => p.user_id === user?.id);
     const { mutate: transfer, isPending: transferring } = usePerformTransfer();
     const { mutate: undo } = useUndoTransaction();
     const { mutate: deleteGame } = useDeleteGame();
@@ -251,7 +252,10 @@ export default function GameSessionPage() {
 
                 {/* History Column */}
                 <Grid size={{ xs: 12, md: 4 }}>
-                    <RouletteTool />
+                    <RouletteTool
+                        gameId={id as string}
+                        myParticipantId={myParticipant?.id}
+                    />
                     <CalculatorTool />
 
                     <TransactionHistory

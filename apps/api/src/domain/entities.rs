@@ -58,6 +58,8 @@ pub struct GameSession {
     pub host_user_id: Uuid,
     pub name: String,
     pub status: String, // Kept as string for SQLx matching flexibility, or can be mapped
+    #[sqlx(default)]
+    pub jackpot_balance: BigDecimal,
     pub created_at: Option<OffsetDateTime>,
     pub ended_at: Option<OffsetDateTime>,
 }

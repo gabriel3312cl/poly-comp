@@ -109,6 +109,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/games/:id/transactions", axum::routing::get(web::handlers::transaction::get_transactions)
             .post(web::handlers::transaction::perform_transfer))
         .route("/games/:id/transactions/:tx_id", axum::routing::delete(web::handlers::transaction::delete_transaction))
+        .route("/games/:id/jackpot/claim", axum::routing::post(web::handlers::transaction::claim_jackpot))
         // Dice Routes
         .route("/games/:id/roll", axum::routing::post(web::handlers::dice::roll_dice))
         .route("/games/:id/rolls", axum::routing::get(web::handlers::dice::get_history))

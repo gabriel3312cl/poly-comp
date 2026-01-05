@@ -42,6 +42,10 @@ impl TransactionService {
     pub async fn get_transactions(&self, game_id: Uuid) -> Result<Vec<Transaction>, anyhow::Error> {
         self.transaction_repo.find_by_game(game_id).await
     }
+
+    pub async fn claim_jackpot(&self, game_id: Uuid, user_id: Uuid) -> Result<bigdecimal::BigDecimal, anyhow::Error> {
+        self.transaction_repo.claim_jackpot(game_id, user_id).await
+    }
 }
 
 #[cfg(test)]

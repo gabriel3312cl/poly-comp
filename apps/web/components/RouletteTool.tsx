@@ -13,6 +13,7 @@ import {
 import DataUsageIcon from '@mui/icons-material/DataUsage'; // Wheel icon equivalent
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import { usePerformTransfer, useClaimJackpot } from '@/hooks/useTransactions';
 
 type OptionType = 'red' | 'green';
 
@@ -34,7 +35,15 @@ const OPTIONS: RouletteOption[] = [
     { id: 8, label: 'Free house', type: 'green', value: 0 },
 ];
 
-export default function RouletteTool() {
+interface RouletteToolProps {
+    gameId: string;
+    myParticipantId?: string;
+}
+
+export default function RouletteTool({ gameId, myParticipantId }: RouletteToolProps) {
+    const transferMutation = usePerformTransfer();
+    const claimJackpotMutation = useClaimJackpot();
+
     const [isOpen, setIsOpen] = useState(false);
     const [isSpinning, setIsSpinning] = useState(false);
     const [selectedOption, setSelectedOption] = useState<RouletteOption | null>(null);
@@ -74,8 +83,21 @@ export default function RouletteTool() {
 
                 if (winner.type === 'green') {
                     playSound('/success.mp3');
+                    if (winner.label === 'Gran Premio') {
+                        claimJackpotMutation.mutate({ gameId });
+                    }
                 } else {
                     playSound('/fail.mp3');
+                    const amount = Math.abs(winner.value);
+                    if (amount > 0 && myParticipantId) {
+                        transferMutation.mutate({
+                            gameId,
+                            amount: amount,
+                            description: winner.label,
+                            from_participant_id: myParticipantId,
+                            to_participant_id: null,
+                        });
+                    }
                 }
             }
         }, speed);

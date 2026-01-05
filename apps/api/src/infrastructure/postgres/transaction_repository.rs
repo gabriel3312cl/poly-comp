@@ -127,14 +127,85 @@ impl TransactionRepository for PostgresTransactionRepository {
         .bind(transaction.game_id)
         .bind(transaction.from_participant_id)
         .bind(transaction.to_participant_id)
-        .bind(transaction.amount)
+        .bind(&transaction.amount) // Use ref for consistency, though Copy works for some types
         .bind(transaction.description)
         .bind(transaction.created_at)
         .fetch_one(&mut *tx)
         .await?;
 
+        // 4. Jackpot Logic: If paying to Bank (from_id=Some, to_id=None), add to jackpot
+        if transaction.from_participant_id.is_some() && transaction.to_participant_id.is_none() {
+             sqlx::query("UPDATE game_sessions SET jackpot_balance = jackpot_balance + $1 WHERE id = $2")
+                 .bind(&transaction.amount)
+                 .bind(transaction.game_id)
+                 .execute(&mut *tx)
+                 .await?;
+        }
+
         tx.commit().await?;
 
         Ok(rec)
+    }
+
+    async fn claim_jackpot(&self, game_id: Uuid, user_id: Uuid) -> Result<bigdecimal::BigDecimal, anyhow::Error> {
+        let mut tx = self.pool.begin().await?;
+
+        // 1. Get Jackpot Balance lock
+        let row: (bigdecimal::BigDecimal,) = sqlx::query_as("SELECT jackpot_balance FROM game_sessions WHERE id = $1 FOR UPDATE")
+            .bind(game_id)
+            .fetch_one(&mut *tx)
+            .await?;
+        
+        let amount = row.0;
+
+        if amount <= bigdecimal::BigDecimal::from(0) {
+            return Ok(amount); // Nothing to claim
+        }
+
+        // 2. Find Participant ID for User
+        let participant_row: Option<(Uuid,)> = sqlx::query_as("SELECT id FROM game_participants WHERE game_id = $1 AND user_id = $2")
+             .bind(game_id)
+             .bind(user_id)
+             .fetch_optional(&mut *tx)
+             .await?;
+        
+        let to_pid = match participant_row {
+            Some(r) => r.0,
+            None => return Err(anyhow::anyhow!("User is not a participant")),
+        };
+
+        // 3. Transfer to User
+        sqlx::query("UPDATE game_participants SET balance = balance + $1 WHERE id = $2")
+            .bind(&amount)
+            .bind(to_pid)
+            .execute(&mut *tx)
+            .await?;
+        
+        // 4. Reset Jackpot
+        sqlx::query("UPDATE game_sessions SET jackpot_balance = 0 WHERE id = $1")
+            .bind(game_id)
+            .execute(&mut *tx)
+            .await?;
+
+        // 5. Record Transaction
+        sqlx::query(
+            r#"
+            INSERT INTO transactions (id, game_id, from_participant_id, to_participant_id, amount, description, created_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
+            "#
+        )
+        .bind(Uuid::new_v4())
+        .bind(game_id)
+        .bind(None::<Uuid>) // From Bank (or Jackpot)
+        .bind(Some(to_pid))
+        .bind(&amount)
+        .bind("Jackpot Win!".to_string())
+        .bind(time::OffsetDateTime::now_utc())
+        .execute(&mut *tx)
+        .await?;
+
+        tx.commit().await?;
+
+        Ok(amount)
     }
 }

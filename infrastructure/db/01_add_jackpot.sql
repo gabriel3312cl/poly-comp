@@ -1,0 +1,1 @@
+ALTER TABLE game_sessions ADD COLUMN jackpot_balance DECIMAL(15, 2) NOT NULL DEFAULT 0.00;
