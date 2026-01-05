@@ -100,7 +100,13 @@ const DIES: SpecialDie[] = [
 interface SpecialDiceToolProps {
     gameId: string;
     myParticipantId?: string;
+    myUserId?: string;
 }
+
+import CardDrawer from './CardDrawer';
+import BovedaMarket from './BovedaMarket';
+
+// ... (existing imports)
 
 export default function SpecialDiceTool({ gameId, myParticipantId }: SpecialDiceToolProps) {
     const { mutate: transfer } = usePerformTransfer();
@@ -114,11 +120,18 @@ export default function SpecialDiceTool({ gameId, myParticipantId }: SpecialDice
     const [rolledDie, setRolledDie] = useState<SpecialDie | null>(null);
     const [resultFace, setResultFace] = useState<DieFace | null>(null);
     const [isRolling, setIsRolling] = useState(false);
-    const [showHistory, setShowHistory] = useState(false); // Added for history collapse
+    const [showHistory, setShowHistory] = useState(false);
 
     // Confirmation State
     const [confirmOpen, setConfirmOpen] = useState(false);
     const [selectedDie, setSelectedDie] = useState<SpecialDie | null>(null);
+
+    // Card State
+    const [cardDrawerOpen, setCardDrawerOpen] = useState(false);
+    const [cardType, setCardType] = useState<'arca' | 'fortuna' | 'bonificacion'>('arca');
+    const [bovedaMarketOpen, setBovedaMarketOpen] = useState(false);
+    const [bovedaMode, setBovedaMode] = useState<'buy' | 'exchange'>('buy');
+
 
     const playSound = (path: string) => {
         new Audio(path).play().catch(e => console.error(e));
@@ -151,7 +164,7 @@ export default function SpecialDiceTool({ gameId, myParticipantId }: SpecialDice
 
             // Handle Auto-Actions
             if (face.action === 'PAY_PLAYER' && face.value && myParticipantId) {
-                // Auto-pay from Bank to Player
+                // ... (existing pay logic)
                 transfer({
                     gameId,
                     amount: face.value,
@@ -160,12 +173,36 @@ export default function SpecialDiceTool({ gameId, myParticipantId }: SpecialDice
                     to_participant_id: myParticipantId
                 }, {
                     onSuccess: () => {
-                        // Delay cash sound slightly so it doesn't overlap perfectly with notification if needed
                         setTimeout(() => playSound('/cash.mp3'), 500);
                     }
                 });
             } else if (face.action === 'JAIL') {
-                playSound('/fail.mp3'); // Optional sound for Jail
+                playSound('/fail.mp3');
+            } else if (face.action === 'CARD') {
+                // Fortuna Card
+                setCardType('fortuna');
+                setTimeout(() => setCardDrawerOpen(true), 1000); // Open after reveal
+            }
+
+            // Boveda Logic (Based on Label for now since Action is generic)
+            if (die.id === 'boveda') {
+                if (face.label.includes('Comprar')) {
+                    setBovedaMode('buy');
+                    setTimeout(() => setBovedaMarketOpen(true), 1000);
+                } else if (face.label.includes('Intercambiar')) {
+                    setBovedaMode('exchange');
+                    setTimeout(() => setBovedaMarketOpen(true), 1000);
+                }
+            } else if (die.id === 'arca' && !face.action) {
+                // Check if it's not a money action/jail. Usually Arca faces are Money/Jail in this specific tool config.
+                // But wait, "Arca Comunal" in User's text file has cards.
+                // In `SpecialDiceTool`, Arca mainly gives money directly.
+                // If the user wants to draw Arca Cards, we might need a "Draw Card" face.
+                // Currently `DIES` config for Arca has 'PAY_PLAYER' or 'JAIL'.
+                // Let's stick to current config unless user requested Arca Draws from Dice?
+                // User text: "Arca comunal... cards". The dice currently has "Gana 100".
+                // If roll result says "Draw Card" (not present in current DIES config), we'd draw.
+                // I will leave Arca as is for now unless I change DIES faces.
             }
 
             // Record History
@@ -243,7 +280,7 @@ export default function SpecialDiceTool({ gameId, myParticipantId }: SpecialDice
                     <Box maxHeight={200} overflow="auto" border="1px solid rgba(255,255,255,0.1)" borderRadius={1}>
                         <List dense disablePadding>
                             {history.length === 0 && <Box p={1}><Typography variant="body2" color="text.disabled">No rolls yet.</Typography></Box>}
-                            {history.map((item) => {
+                            {history.map((item: any) => {
                                 const ts = parseServerDate(item.created_at);
                                 const timeStr = ts ? new Date(ts).toLocaleTimeString() : '';
                                 return (
@@ -330,6 +367,35 @@ export default function SpecialDiceTool({ gameId, myParticipantId }: SpecialDice
                 confirmText="Roll"
                 severity="info"
             />
+
+            {/* Card Drawer (Arca/Fortuna) */}
+            <CardDrawer
+                open={cardDrawerOpen}
+                onClose={() => setCardDrawerOpen(false)}
+                gameId={gameId}
+                type={cardType}
+            />
+
+            {/* Boveda Market Dialog */}
+            <Dialog open={bovedaMarketOpen} onClose={() => setBovedaMarketOpen(false)} maxWidth="md" fullWidth>
+                <DialogTitle>
+                    Boveda Market - {bovedaMode === 'buy' ? 'Select a Card to Buy' : 'Select a Card to Exchange'}
+                </DialogTitle>
+                <DialogContent>
+                    <BovedaMarket
+                        gameId={gameId}
+                        mode={bovedaMode}
+                        onActionComplete={() => {
+                            setBovedaMarketOpen(false);
+                            playSound('/success.mp3');
+                        }}
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setBovedaMarketOpen(false)}>Close</Button>
+                </DialogActions>
+            </Dialog>
+
         </Paper >
     );
 }

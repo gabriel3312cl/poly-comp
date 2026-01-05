@@ -45,3 +45,29 @@ pub trait TransactionRepository {
     ) -> Result<Transaction, anyhow::Error>;
     async fn claim_jackpot(&self, game_id: Uuid, user_id: Uuid) -> Result<Transaction, anyhow::Error>;
 }
+
+#[cfg_attr(test, mockall::automock)]
+#[async_trait]
+pub trait CardRepository {
+
+    async fn find_by_type(&self, card_type: &str) -> Result<Vec<crate::domain::entities::Card>, anyhow::Error>;
+    async fn find_drawn_cards(&self, game_id: Uuid) -> Result<Vec<Uuid>, anyhow::Error>;
+    async fn mark_card_drawn(&self, game_id: Uuid, card_id: Uuid) -> Result<(), anyhow::Error>;
+    async fn clear_drawn_cards(&self, game_id: Uuid, card_type: &str) -> Result<(), anyhow::Error>; // Reshuffle
+    
+    // Boveda Market
+    async fn get_boveda_market(&self, game_id: Uuid) -> Result<Vec<crate::domain::entities::GameBovedaMarket>, anyhow::Error>;
+    async fn set_boveda_market_slot(&self, game_id: Uuid, slot_index: i32, card_id: Uuid) -> Result<(), anyhow::Error>;
+    async fn clear_boveda_market_slot(&self, game_id: Uuid, slot_index: i32) -> Result<(), anyhow::Error>;
+
+    // Inventory
+    async fn add_to_inventory(&self, participant_id: Uuid, card_id: Uuid) -> Result<crate::domain::entities::ParticipantCard, anyhow::Error>;
+    async fn get_inventory(&self, participant_id: Uuid) -> Result<Vec<crate::domain::entities::ParticipantCard>, anyhow::Error>;
+    async fn remove_from_inventory(&self, inventory_id: Uuid) -> Result<(), anyhow::Error>;
+
+    // History
+    async fn log_usage(&self, game_id: Uuid, participant_id: Uuid, card_id: Uuid, description: Option<String>) -> Result<crate::domain::entities::CardUsageHistory, anyhow::Error>;
+    
+    // Seeding
+    async fn ensure_cards_seeded(&self) -> Result<(), anyhow::Error>;
+}

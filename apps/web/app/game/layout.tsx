@@ -14,6 +14,14 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
     const { mutate: logout } = useLogout();
     const [anchorElNav, setAnchorElNav] = useState<null | HTMLElement>(null);
 
+    const handleOpenNavMenu = (event: React.MouseEvent<HTMLElement>) => {
+        setAnchorElNav(event.currentTarget);
+    };
+
+    const handleCloseNavMenu = () => {
+        setAnchorElNav(null);
+    };
+
     return (
         <AuthGuard>
             <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
@@ -57,7 +65,7 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
                                 aria-label="account of current user"
                                 aria-controls="menu-appbar"
                                 aria-haspopup="true"
-                                onClick={(e) => setAnchorElNav(e.currentTarget)}
+                                onClick={handleOpenNavMenu}
                                 color="inherit"
                             >
                                 <MenuIcon />
@@ -75,18 +83,18 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
                                     horizontal: 'left',
                                 }}
                                 open={Boolean(anchorElNav)}
-                                onClose={() => setAnchorElNav(null)}
+                                onClose={handleCloseNavMenu}
                                 sx={{
                                     display: { xs: 'block', md: 'none' },
                                 }}
                             >
-                                <MenuItem onClick={() => { setAnchorElNav(null); window.location.href = '/history'; }}>
+                                <MenuItem onClick={() => { handleCloseNavMenu(); window.location.href = '/history'; }}>
                                     <Typography textAlign="center">My Games</Typography>
                                 </MenuItem>
-                                <MenuItem onClick={() => { setAnchorElNav(null); window.location.href = '/profile'; }}>
+                                <MenuItem onClick={() => { handleCloseNavMenu(); window.location.href = '/profile'; }}>
                                     <Typography textAlign="center">Profile</Typography>
                                 </MenuItem>
-                                <MenuItem onClick={() => { setAnchorElNav(null); logout(); }}>
+                                <MenuItem onClick={() => { handleCloseNavMenu(); logout(); }}>
                                     <Typography textAlign="center" color="error">Logout</Typography>
                                 </MenuItem>
                             </Menu>

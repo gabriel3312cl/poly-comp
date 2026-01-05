@@ -11,8 +11,12 @@ import {
     Fab,
     useTheme,
     useMediaQuery,
-    Divider
+    Divider,
+    Drawer,
+    Collapse // Added
 } from '@mui/material';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore'; // Added
+import ExpandLessIcon from '@mui/icons-material/ExpandLess'; // Added
 import { useParams } from 'next/navigation';
 import { useGetGame, useGetParticipants, useLeaveGame, useDeleteGame } from '@/hooks/useGame';
 import { useGetTransactions, usePerformTransfer, useUndoTransaction } from '@/hooks/useTransactions';
@@ -26,6 +30,10 @@ import AccountBalanceIcon from '@mui/icons-material/AccountBalance'; // Bank Ico
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import ExitToAppIcon from '@mui/icons-material/ExitToApp';
 import DeleteIcon from '@mui/icons-material/Delete';
+import BackpackIcon from '@mui/icons-material/Backpack';
+import StorefrontIcon from '@mui/icons-material/Storefront';
+import InventorySection from '@/components/InventorySection';
+import BovedaMarket from '@/components/BovedaMarket';
 import { parseServerDate } from '@/utils/formatters';
 import { useAuthStore } from '@/store/authStore';
 import DiceSection from '@/components/DiceSection';
@@ -35,6 +43,8 @@ import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import PauseIcon from '@mui/icons-material/Pause';
 import StopIcon from '@mui/icons-material/Stop';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
+import CardDrawer from '@/components/CardDrawer';
 import {
     Dialog,
     DialogTitle,
@@ -127,6 +137,12 @@ export default function GameSessionPage() {
     const [editName, setEditName] = useState('');
     const [editStatus, setEditStatus] = useState('');
     const [elapsedTime, setElapsedTime] = useState('00:00:00');
+
+    const [manualDrawerOpen, setManualDrawerOpen] = useState(false);
+    const [manualCardType, setManualCardType] = useState<'arca' | 'fortuna' | 'bonificacion'>('arca');
+    const [inventoryOpen, setInventoryOpen] = useState(false);
+    const [decksOpen, setDecksOpen] = useState(false);
+    const [marketOpen, setMarketOpen] = useState(false); // Market collapsible state
 
     // Find info
     const me = participants.find(p => p.user_id === user?.id);
@@ -306,6 +322,68 @@ export default function GameSessionPage() {
 
                 {/* History Column */}
                 <Grid size={{ xs: 12, md: 4 }}>
+                    {/* Decks / Draw Cards Widget */}
+                    <Box mb={2} overflow="hidden" bgcolor="rgba(0,0,0,0.2)" borderRadius={2} border="1px solid rgba(255,255,255,0.1)">
+                        <Box
+                            p={2}
+                            display="flex"
+                            alignItems="center"
+                            justifyContent="space-between"
+                            onClick={() => setDecksOpen(!decksOpen)}
+                            sx={{ cursor: 'pointer', '&:hover': { bgcolor: 'rgba(255,255,255,0.05)' } }}
+                        >
+                            <Typography variant="h6" color="primary.light">Decks</Typography>
+                            {decksOpen ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                        </Box>
+                        <Collapse in={decksOpen}>
+                            <Box p={2} pt={0}>
+                                <Stack direction="row" spacing={2}>
+                                    <Button
+                                        variant="contained"
+                                        color="info"
+                                        onClick={() => { setManualCardType('arca'); setManualDrawerOpen(true); }}
+                                        fullWidth
+                                        startIcon={<AccountBalanceIcon />}
+                                    >
+                                        Arca
+                                    </Button>
+                                    <Button
+                                        variant="contained"
+                                        color="secondary"
+                                        onClick={() => { setManualCardType('fortuna'); setManualDrawerOpen(true); }}
+                                        fullWidth
+                                        startIcon={<AutoFixHighIcon />}
+                                    >
+                                        Fortuna
+                                    </Button>
+                                </Stack>
+                            </Box>
+                        </Collapse>
+                    </Box>
+
+                    {/* Boveda Market Widget */}
+                    <Box mb={3} overflow="hidden" bgcolor="rgba(0,0,0,0.2)" borderRadius={2} border="1px solid rgba(255,255,255,0.1)">
+                        <Box
+                            p={2}
+                            display="flex"
+                            alignItems="center"
+                            justifyContent="space-between"
+                            onClick={() => setMarketOpen(!marketOpen)}
+                            sx={{ cursor: 'pointer', '&:hover': { bgcolor: 'rgba(255,255,255,0.05)' } }}
+                        >
+                            <Stack direction="row" alignItems="center" spacing={1}>
+                                <StorefrontIcon color="warning" />
+                                <Typography variant="h6" color="warning.main">Bóveda Market</Typography>
+                            </Stack>
+                            {marketOpen ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                        </Box>
+                        <Collapse in={marketOpen}>
+                            <Box p={2} pt={0}>
+                                <BovedaMarket gameId={id} mode="view" />
+                            </Box>
+                        </Collapse>
+                    </Box>
+
                     <RouletteTool
                         gameId={id as string}
                         myParticipantId={myParticipant?.id}
@@ -372,6 +450,40 @@ export default function GameSessionPage() {
                     </Box>
                 </DialogActions>
             </Dialog>
-        </Container>
+
+            {/* Manual Card Drawer */}
+            <CardDrawer
+                open={manualDrawerOpen}
+                onClose={() => setManualDrawerOpen(false)}
+                gameId={id}
+                type={manualCardType}
+            />
+
+            {/* Inventory FAB */}
+            <Fab
+                color="secondary"
+                aria-label="inventory"
+                sx={{ position: 'fixed', bottom: 32, right: 32 }}
+                onClick={() => setInventoryOpen(true)}
+            >
+                <BackpackIcon />
+            </Fab>
+
+            {/* Inventory Drawer */}
+            <Drawer
+                anchor="right"
+                open={inventoryOpen}
+                onClose={() => setInventoryOpen(false)}
+            >
+                <Box sx={{ width: 350, p: 2 }}>
+                    <Typography variant="h5" gutterBottom fontWeight="bold">
+                        My Inventory
+                    </Typography>
+                    <InventorySection
+                        gameId={id}
+                    />
+                </Box>
+            </Drawer>
+        </Container >
     );
 }

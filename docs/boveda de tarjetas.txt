@@ -1,0 +1,81 @@
+250 (amarillo)
+Constructor privilegiado
+Puedes comprar y construir casas en cualquier momento, incluso en propuedades que no forman parte de un grupo completo
+
+375 (amarillo)
+Todos los titulos de propiedad
+Eres dueño de todos los titulos de Propiedad. Cuando otros jugadores compren titulos de propiedad, te pagan a ti en lugar de pagar al banco. Cuando tu lo compres, no pagas nada
+
+225 (verde)
+Tren de victorias
+Si posees los cuatros ferrocarriles, ganas la partida automaticamente
+
+25 (rojo)
+Subasta instantanea
+Avanza hasta la siguiente propiedad sin dueño y subastala. Puedes participar en la subastala
+
+250 (verde)
+A la casa del exito
+Si posees al menos un ferrocarril, una casilla de esquina, un servicio publico y una casilla de impuesto, ganas la partida automaticamente
+
+500 (amarillo)
+El banco
+Eres dueño del banco. Coloca tu dinero personal a un lado y mantenlo separado del dinero del banco. Cuando pagues, usa el dinero del banco. Cuando cobres, coloca lo que recaudes en tu mazo personal de dinero
+
+50 (rojo)
+Monopolio instantaneo
+Compra un grupo de propiedades compelto. Si alguina de las propiedades del grupo pertenece a otro jugador, pagale el precio de compra
+
+200 (rojo)
+ladron de titulos
+Roba a cada jugador su titulo de propiedad mas barato
+
+500 (amnarillo)
+La boveda
+Eres dueño de la boveda de ventas. Cuando otros jugadores compren tarjetas de venta, te pagan a ti en lugar de pagar al banco. Cuando tu las comprres, no pagas nada.
+
+300 (rojo)
+Todos los de 50
+Eres dueño de todos los billetes de 50. Toma todos los de cada jugador y los del banco
+
+300 (amarillo)
+Eres dueño del numero 7. Cuando un jugador, incluido tu mismo, saca un 7 con los dados, puedes moverlo a cualquier espacio del tablero que desees
+
+150 (red)
+Propulsor
+Usalo en lugar de tirar lso dados para avanzar a cualquier casilla
+
+300 (verde)
+Campeon por partida doble
+Si posees dos grupos de propiedades completos, ganas la partida automaticamente
+
+275 (amarillo)
+El dado de compra
+Eres dueño del dado de compra. Cuando tiras el dado, puedes elegir el resultado
+
+350 (verde)
+Victoria por barrida
+Si posees 8 titulos de propiedad, ganas la partida automaticamente
+
+25 (rojo)
+Bienes raices gratuitos
+Coloca una casa en cualquiera de tus propiedades sin pagar nada. Esa propiedad no tiene que formar parte de un grupo completo.
+
+325 (verde)
+Circuito de la victoria
+Si posees el muelle y tienes un hotel en su casilla, ganas la partida automaticamente
+
+50 (verde)
+Dobles
+Si un jugador, incluido tu mismo, saca dobles tres veces en su turno, gana la partida automaticamente
+
+100 (amarillo)
+Todas las construcciones
+Eres dueño de todas las casas y todos los hoteles. Cuando otros jugadores construyan, te pagan a ti en lugar de pagar al banco. Cuando tu construyas, no pagas nada
+
+200 (verde)
+Salida victoriosa
+Si caes en la salida, ganas la partida automaticamente
+
+Amarillo: Esta habilidad permanece activa mientras conserver esta tarjeta
+Rojo: Conserva esta tarjeta hasta que estes preparado para usarla, Descartala despues de usarla

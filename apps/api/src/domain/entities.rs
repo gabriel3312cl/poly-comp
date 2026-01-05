@@ -191,3 +191,60 @@ pub struct SpecialDiceRollHistory {
     pub first_name: String,
     pub last_name: String,
 }
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+pub struct Card {
+    pub id: Uuid,
+    pub type_: String, // 'type' is keyword, mapped to 'type' column
+    pub title: String,
+    pub description: String,
+    pub cost: Option<BigDecimal>,
+    pub color: Option<String>,
+    pub action_type: Option<String>,
+    pub action_value: Option<BigDecimal>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+pub struct ParticipantCard {
+    pub id: Uuid,
+    pub participant_id: Uuid,
+    pub card_id: Uuid,
+    pub is_active: bool,
+    #[serde(with = "time::serde::rfc3339::option")]
+    pub acquired_at: Option<OffsetDateTime>,
+    // Joined
+    pub title: Option<String>,
+    pub description: Option<String>,
+    pub type_: Option<String>,
+    pub color: Option<String>,
+    pub action_type: Option<String>,
+    pub action_value: Option<BigDecimal>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+pub struct GameBovedaMarket {
+    pub game_id: Uuid,
+    pub slot_index: i32,
+    pub card_id: Uuid,
+    // Joined
+    pub title: Option<String>,
+    pub description: Option<String>,
+    pub cost: Option<BigDecimal>,
+    pub color: Option<String>,
+    pub type_: Option<String>,
+    pub action_type: Option<String>,
+    pub action_value: Option<BigDecimal>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+pub struct CardUsageHistory {
+    pub id: Uuid,
+    pub game_id: Uuid,
+    pub participant_id: Uuid,
+    pub card_id: Uuid,
+    pub action_description: Option<String>,
+    #[serde(with = "time::serde::rfc3339::option")]
+    pub used_at: Option<OffsetDateTime>,
+    // Joined
+    pub first_name: Option<String>,
+    pub card_title: Option<String>,
+}

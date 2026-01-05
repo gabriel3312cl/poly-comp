@@ -6,6 +6,7 @@ use crate::application::{
     dice_service::DiceService, 
     roulette_service::RouletteService,
     special_dice_service::SpecialDiceService,
+    card_service::CardService,
 };
 use crate::config::Config;
 use tokio::sync::broadcast;
@@ -19,6 +20,7 @@ pub struct AppState {
     pub dice_service: Arc<DiceService>, 
     pub roulette_service: Arc<RouletteService>,
     pub special_dice_service: Arc<SpecialDiceService>,
+    pub card_service: Arc<CardService>,
     pub config: Config,
     pub tx: broadcast::Sender<GameEvent>,
 }

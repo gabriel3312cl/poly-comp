@@ -15,6 +15,7 @@ use sqlx::postgres::PgPoolOptions;
 use std::net::SocketAddr;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 use crate::config::Config;
+use std::sync::Arc;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -38,24 +39,26 @@ async fn main() -> anyhow::Result<()> {
 
 
     // Repositories
-    let user_repo = std::sync::Arc::new(infrastructure::postgres::user_repository::PostgresUserRepository::new(pool.clone()));
-    let game_repo = std::sync::Arc::new(infrastructure::postgres::game_repository::PostgresGameRepository::new(pool.clone()));
-    let participant_repo = std::sync::Arc::new(infrastructure::postgres::participant_repository::PostgresParticipantRepository::new(pool.clone()));
-    let transaction_repo = std::sync::Arc::new(infrastructure::postgres::transaction_repository::PostgresTransactionRepository::new(pool.clone()));
-    let dice_repo = std::sync::Arc::new(infrastructure::postgres::dice_repository::PostgresDiceRepository::new(pool.clone()));
-    let roulette_repo = std::sync::Arc::new(infrastructure::postgres::roulette_repository::PostgresRouletteRepository::new(pool.clone()));
-    let special_dice_repo = std::sync::Arc::new(infrastructure::postgres::special_dice_repository::PostgresSpecialDiceRepository::new(pool.clone()));
+    let user_repo = Arc::new(infrastructure::postgres::user_repository::PostgresUserRepository::new(pool.clone()));
+    let game_repo = Arc::new(infrastructure::postgres::game_repository::PostgresGameRepository::new(pool.clone()));
+    let participant_repo = Arc::new(infrastructure::postgres::participant_repository::PostgresParticipantRepository::new(pool.clone()));
+    let transaction_repo = Arc::new(infrastructure::postgres::transaction_repository::PostgresTransactionRepository::new(pool.clone()));
+    let dice_repo = Arc::new(infrastructure::postgres::dice_repository::PostgresDiceRepository::new(pool.clone()));
+    let roulette_repo = Arc::new(infrastructure::postgres::roulette_repository::PostgresRouletteRepository::new(pool.clone()));
+    let special_dice_repo = Arc::new(infrastructure::postgres::special_dice_repository::PostgresSpecialDiceRepository::new(pool.clone()));
+    let card_repo = Arc::new(infrastructure::postgres::card_repository::PostgresCardRepository::new(pool.clone()));
 
     // Services
     // Broadcast Channel
     let (tx, _rx) = tokio::sync::broadcast::channel(100);
 
-    let user_service = std::sync::Arc::new(application::user_service::UserService::new(user_repo.clone()));
-    let game_service = std::sync::Arc::new(application::game_service::GameService::new(game_repo, participant_repo.clone()));
-    let transaction_service = std::sync::Arc::new(application::transaction_service::TransactionService::new(transaction_repo, participant_repo, tx.clone()));
-    let dice_service = std::sync::Arc::new(application::dice_service::DiceService::new(dice_repo, tx.clone()));
-    let roulette_service = std::sync::Arc::new(application::roulette_service::RouletteService::new(roulette_repo, tx.clone()));
-    let special_dice_service = std::sync::Arc::new(application::special_dice_service::SpecialDiceService::new(special_dice_repo, tx.clone()));
+    let user_service = Arc::new(application::user_service::UserService::new(user_repo.clone()));
+    let game_service = Arc::new(application::game_service::GameService::new(game_repo.clone(), participant_repo.clone())); // Removed tx
+    let transaction_service = Arc::new(application::transaction_service::TransactionService::new(transaction_repo.clone(), participant_repo.clone(), tx.clone()));
+    let dice_service = Arc::new(application::dice_service::DiceService::new(dice_repo.clone(), tx.clone())); // Removed game_repo, participant_repo
+    let roulette_service = Arc::new(application::roulette_service::RouletteService::new(roulette_repo.clone(), tx.clone())); // Removed transaction_repo, participant_repo
+    let special_dice_service = Arc::new(application::special_dice_service::SpecialDiceService::new(special_dice_repo.clone(), tx.clone())); // Removed transaction_repo, participant_repo
+    let card_service = Arc::new(application::card_service::CardService::new(card_repo.clone(), transaction_repo.clone(), game_repo.clone(), participant_repo.clone(), tx.clone()));
 
     let app_state = state::AppState {
         user_service,
@@ -64,6 +67,7 @@ async fn main() -> anyhow::Result<()> {
         dice_service,
         roulette_service,
         special_dice_service,
+        card_service,
         config: config.clone(),
         tx,
     };
@@ -105,6 +109,13 @@ async fn main() -> anyhow::Result<()> {
         // Special Dice Routes
         .route("/games/:id/special-dice", axum::routing::get(web::handlers::special_dice::get_history)
             .post(web::handlers::special_dice::record_roll))
+        // Card Routes
+        .route("/games/:id/cards/draw", axum::routing::post(web::handlers::card::draw_card))
+        .route("/games/:id/cards/market", axum::routing::get(web::handlers::card::get_market))
+        .route("/games/:id/cards/market/buy", axum::routing::post(web::handlers::card::buy_market_card))
+        .route("/games/:id/cards/market/exchange", axum::routing::post(web::handlers::card::exchange_market_card))
+        .route("/games/:id/cards/inventory", axum::routing::get(web::handlers::card::get_inventory))
+        .route("/games/:id/cards/use", axum::routing::post(web::handlers::card::use_card))
         .layer(tower_http::trace::TraceLayer::new_for_http())
         .layer(
             tower_http::cors::CorsLayer::new()

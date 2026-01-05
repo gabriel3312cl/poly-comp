@@ -1,0 +1,51 @@
+arca comunal
+
+por venta de acciones, cobra 50
+
+Devbolucion de impuestos
+Cobra 20
+
+Recibes una herencia misteriosa
+Cobra 100
+
+Error bancario a tu favor
+Cobra 200
+
+Gastos escolares
+Paga 50
+
+Es tu cumpleaños
+CObra 10 a cada jugador
+
+Avanza hasta la salida
+Cobra 200
+
+El seguro de vida te reporta beneficios
+Cobra 100
+
+Honorarios de consultoria
+Cobra 25
+
+Debes hacer reparaciones viales
+Por cada casa que poseas, paga 40
+Por cada hotel que poseas, pagas 115
+
+El fondo vacacional te reporta beneficios
+CObra 100
+
+Ve a la carcel
+Ve directamente a la carcel
+No pases por la salida ni cobres 200
+
+Has ganado el segundo premio en un concurso de belleza
+Cobra 10
+
+Adoptas un perrito
+Paga 50
+
+Facturas de hospital
+Paga 100
+
+Sal de la carcel gratis
+Puedes intercambiar o vender esta tarjeta, o guardarla hasta que la necesites
+
