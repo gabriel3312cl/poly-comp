@@ -56,7 +56,6 @@ export default function TransferDialog({ open, onClose, onConfirm, targetName, t
             <DialogContent>
                 <Stack spacing={3} mt={1}>
                     <TextField
-                        autoFocus
                         label="Amount"
                         type="number"
                         fullWidth

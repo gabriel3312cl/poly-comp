@@ -90,6 +90,7 @@ pub struct Transaction {
     pub to_participant_id: Option<Uuid>,
     pub amount: BigDecimal,
     pub description: Option<String>,
+    #[serde(with = "time::serde::rfc3339::option")]
     pub created_at: Option<OffsetDateTime>,
 }
 
