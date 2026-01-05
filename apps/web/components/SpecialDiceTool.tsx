@@ -100,10 +100,9 @@ const DIES: SpecialDie[] = [
 interface SpecialDiceToolProps {
     gameId: string;
     myParticipantId?: string;
-    myUserId?: string;
 }
 
-export default function SpecialDiceTool({ gameId, myParticipantId, myUserId }: SpecialDiceToolProps) {
+export default function SpecialDiceTool({ gameId, myParticipantId }: SpecialDiceToolProps) {
     const { mutate: transfer } = usePerformTransfer();
 
     // History Hooks
@@ -170,10 +169,10 @@ export default function SpecialDiceTool({ gameId, myParticipantId, myUserId }: S
             }
 
             // Record History
-            if (myUserId) {
+            if (myParticipantId) {
                 recordRollMutation.mutate({
                     gameId,
-                    userId: myUserId,
+                    userId: myParticipantId,
                     dieName: die.name,
                     dieId: die.id,
                     faceLabel: face.label,
