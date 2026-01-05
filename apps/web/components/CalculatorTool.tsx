@@ -22,7 +22,13 @@ export default function CalculatorTool() {
     const [expression, setExpression] = useState('');
     const [shouldResetDisplay, setShouldResetDisplay] = useState(false);
 
+    const playKeySound = () => {
+        const audio = new Audio('/key.mp3');
+        audio.play().catch(e => console.error('Error playing sound:', e));
+    };
+
     const handleDigit = (digit: string) => {
+        playKeySound();
         if (display === '0' || shouldResetDisplay) {
             setDisplay(digit);
             setShouldResetDisplay(false);
@@ -32,11 +38,13 @@ export default function CalculatorTool() {
     };
 
     const handleOperator = (op: string) => {
+        playKeySound();
         setExpression(display + ' ' + op + ' ');
         setShouldResetDisplay(true);
     };
 
     const handleCalculate = () => {
+        playKeySound();
         try {
             // eslint-disable-next-line
             const result = eval(expression + display);
@@ -50,12 +58,14 @@ export default function CalculatorTool() {
     };
 
     const handleClear = () => {
+        playKeySound();
         setDisplay('0');
         setExpression('');
         setShouldResetDisplay(false);
     };
 
     const handleDelete = () => {
+        playKeySound();
         if (display.length === 1 || shouldResetDisplay) {
             setDisplay('0');
             setShouldResetDisplay(false);

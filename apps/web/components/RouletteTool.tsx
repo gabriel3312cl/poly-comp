@@ -42,8 +42,15 @@ export default function RouletteTool() {
 
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
+    const playSound = (path: string) => {
+        const audio = new Audio(path);
+        audio.play().catch(e => console.error('Error playing sound:', e));
+    };
+
     const handleSpin = () => {
         if (isSpinning) return;
+
+        playSound('/roullette.mp3');
 
         setIsSpinning(true);
         setSelectedOption(null);
@@ -59,9 +66,17 @@ export default function RouletteTool() {
             if (spinTime >= totalSpinTime) {
                 if (intervalRef.current) clearInterval(intervalRef.current);
                 const winnerIndex = Math.floor(Math.random() * OPTIONS.length);
+                const winner = OPTIONS[winnerIndex];
+
                 setDisplayIndex(winnerIndex);
-                setSelectedOption(OPTIONS[winnerIndex]);
+                setSelectedOption(winner);
                 setIsSpinning(false);
+
+                if (winner.type === 'green') {
+                    playSound('/success.mp3');
+                } else {
+                    playSound('/fail.mp3');
+                }
             }
         }, speed);
     };
