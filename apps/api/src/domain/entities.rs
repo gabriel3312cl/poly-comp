@@ -65,6 +65,15 @@ pub struct GameSession {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+pub struct Participant {
+    pub id: Uuid,
+    pub user_id: Uuid,
+    pub game_id: Uuid,
+    pub balance: BigDecimal,
+    pub created_at: Option<OffsetDateTime>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct GameParticipant {
     pub id: Uuid,
     pub game_id: Uuid,

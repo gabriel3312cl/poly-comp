@@ -47,12 +47,15 @@ async fn main() -> anyhow::Result<()> {
     let special_dice_repo = std::sync::Arc::new(infrastructure::postgres::special_dice_repository::PostgresSpecialDiceRepository::new(pool.clone()));
 
     // Services
-    let user_service = std::sync::Arc::new(application::user_service::UserService::new(user_repo));
+    // Broadcast Channel
+    let (tx, _rx) = tokio::sync::broadcast::channel(100);
+
+    let user_service = std::sync::Arc::new(application::user_service::UserService::new(user_repo.clone()));
     let game_service = std::sync::Arc::new(application::game_service::GameService::new(game_repo, participant_repo.clone()));
-    let transaction_service = std::sync::Arc::new(application::transaction_service::TransactionService::new(transaction_repo, participant_repo));
-    let dice_service = std::sync::Arc::new(application::dice_service::DiceService::new(dice_repo));
-    let roulette_service = std::sync::Arc::new(application::roulette_service::RouletteService::new(roulette_repo));
-    let special_dice_service = std::sync::Arc::new(application::special_dice_service::SpecialDiceService::new(special_dice_repo));
+    let transaction_service = std::sync::Arc::new(application::transaction_service::TransactionService::new(transaction_repo, participant_repo, tx.clone()));
+    let dice_service = std::sync::Arc::new(application::dice_service::DiceService::new(dice_repo, tx.clone()));
+    let roulette_service = std::sync::Arc::new(application::roulette_service::RouletteService::new(roulette_repo, tx.clone()));
+    let special_dice_service = std::sync::Arc::new(application::special_dice_service::SpecialDiceService::new(special_dice_repo, tx.clone()));
 
     let app_state = state::AppState {
         user_service,
@@ -62,11 +65,13 @@ async fn main() -> anyhow::Result<()> {
         roulette_service,
         special_dice_service,
         config: config.clone(),
+        tx,
     };
 
     // Routes
     let app = Router::new()
         .route("/health", get(|| async { "OK" }))
+        .route("/ws", get(web::handlers::ws::ws_handler))
         // User Routes
         .route("/users/register", axum::routing::post(web::handlers::user::register_user))
         .route("/users/login", axum::routing::post(web::handlers::user::login_user))

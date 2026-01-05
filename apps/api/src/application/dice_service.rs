@@ -1,3 +1,5 @@
+use crate::domain::events::GameEvent;
+use tokio::sync::broadcast;
 use std::sync::Arc;
 use uuid::Uuid;
 use crate::domain::entities::DiceRoll;
@@ -6,11 +8,12 @@ use rand::Rng;
 
 pub struct DiceService {
     dice_repo: Arc<PostgresDiceRepository>,
+    tx: broadcast::Sender<GameEvent>,
 }
 
 impl DiceService {
-    pub fn new(dice_repo: Arc<PostgresDiceRepository>) -> Self {
-        Self { dice_repo }
+    pub fn new(dice_repo: Arc<PostgresDiceRepository>, tx: broadcast::Sender<GameEvent>) -> Self {
+        Self { dice_repo, tx }
     }
 
     pub async fn roll_dice(&self, game_id: Uuid, user_id: Uuid, sides: i32, count: i32) -> Result<DiceRoll, anyhow::Error> {
@@ -28,6 +31,10 @@ impl DiceService {
         };
 
         let roll = self.dice_repo.create(game_id, user_id, count, sides, results, total).await?;
+        
+        // Broadcast
+        let _ = self.tx.send(GameEvent::DiceRolled(roll.clone()));
+
         Ok(roll)
     }
 

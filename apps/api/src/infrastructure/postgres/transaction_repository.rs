@@ -102,9 +102,9 @@ impl TransactionRepository for PostgresTransactionRepository {
                      .await?;
 
              } else {
-                 return Err(anyhow::anyhow!("Sender participant not found"));
+                 return Err(anyhow::anyhow!("Sender participant not found for ID: {}", from_id));
              }
-        }
+         }
 
         // 2. Handle Receiver (Add)
         if let Some(to_id) = transaction.to_participant_id {

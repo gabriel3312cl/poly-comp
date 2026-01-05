@@ -48,10 +48,14 @@ import {
 } from '@mui/material';
 import { useUpdateGame } from '@/hooks/useGame';
 import { useEffect } from 'react';
+import { useGameSocket } from '@/hooks/useGameSocket';
 
 export default function GameSessionPage() {
     const { id } = useParams() as { id: string };
     const user = useAuthStore(state => state.user);
+
+    // WebSocket Connection
+    useGameSocket(id);
 
     // Queries
     const { data: game } = useGetGame(id);
@@ -293,7 +297,11 @@ export default function GameSessionPage() {
                     <DiceSection gameId={id} />
 
                     {/* Special Dice */}
-                    <SpecialDiceTool gameId={id} myParticipantId={myParticipant?.user_id} />
+                    <SpecialDiceTool
+                        gameId={id}
+                        myParticipantId={myParticipant?.id}
+                        myUserId={myParticipant?.user_id}
+                    />
                 </Grid>
 
                 {/* History Column */}

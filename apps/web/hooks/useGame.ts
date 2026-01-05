@@ -79,7 +79,6 @@ export const useGetGame = (gameId: string) => {
             return data as GameSession;
         },
         enabled: !!gameId,
-        refetchInterval: 5000, // Polling for status updates
     });
 };
 
@@ -91,7 +90,6 @@ export const useGetParticipants = (gameId: string) => {
             return data as GameParticipant[];
         },
         enabled: !!gameId,
-        refetchInterval: 6000, // Reduced frequency
     });
 };
 

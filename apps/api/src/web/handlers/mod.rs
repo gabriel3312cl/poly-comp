@@ -4,3 +4,4 @@ pub mod transaction;
 pub mod dice;
 pub mod roulette;
 pub mod special_dice;
+pub mod ws;

@@ -34,7 +34,7 @@ pub async fn record_roll(
             payload.face_action
         )
         .await
-        .map_err(|e| {
+        .map_err(|e: anyhow::Error| {
             tracing::error!("Failed to record special dice roll: {}", e);
             (StatusCode::INTERNAL_SERVER_ERROR, e.to_string())
         })?;
@@ -50,7 +50,7 @@ pub async fn get_history(
         .special_dice_service
         .get_history(game_id)
         .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+        .map_err(|e: anyhow::Error| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
     Ok(Json(history))
 }

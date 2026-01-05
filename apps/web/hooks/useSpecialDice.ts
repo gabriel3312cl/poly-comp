@@ -19,10 +19,9 @@ export const useGetSpecialDiceHistory = (gameId: string) => {
     return useQuery({
         queryKey: ['special-dice-history', gameId],
         queryFn: async () => {
-            const response = await api.get<SpecialDiceHistoryItem[]>(`/games/${gameId}/special-dice`);
+            const response = await api.get(`/games/${gameId}/special-dice`);
             return response.data;
         },
-        refetchInterval: 5000,
     });
 };
 

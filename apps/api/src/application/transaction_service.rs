@@ -4,19 +4,23 @@ use bigdecimal::BigDecimal;
 use crate::domain::{
     entities::Transaction,
     repositories::{TransactionRepository, ParticipantRepository},
+    events::GameEvent,
 };
+use tokio::sync::broadcast;
 
 pub struct TransactionService {
     transaction_repo: Arc<dyn TransactionRepository + Send + Sync>,
     _participant_repo: Arc<dyn ParticipantRepository + Send + Sync>, 
+    tx: broadcast::Sender<GameEvent>,
 }
 
 impl TransactionService {
     pub fn new(
         transaction_repo: Arc<dyn TransactionRepository + Send + Sync>,
         participant_repo: Arc<dyn ParticipantRepository + Send + Sync>,
+        tx: broadcast::Sender<GameEvent>,
     ) -> Self {
-        Self { transaction_repo, _participant_repo: participant_repo }
+        Self { transaction_repo, _participant_repo: participant_repo, tx }
     }
 
     pub async fn transfer(&self, game_id: Uuid, from_pid: Option<Uuid>, to_pid: Option<Uuid>, amount: BigDecimal, description: Option<String>) -> Result<Transaction, anyhow::Error> {
@@ -32,11 +36,19 @@ impl TransactionService {
             created_at: Some(time::OffsetDateTime::now_utc()),
         };
 
-        self.transaction_repo.execute_transfer(tx).await
+        let result = self.transaction_repo.execute_transfer(tx).await;
+        
+        if let Ok(transaction) = &result {
+            // Broadcast event. We ignore errors if nobody is listening.
+            let _ = self.tx.send(GameEvent::TransactionCreated(transaction.clone()));
+        }
+
+        result
     }
 
     pub async fn delete_transaction(&self, tx_id: Uuid) -> Result<(), anyhow::Error> {
         // Just delete for now.
+        // TODO: Broadcast undo? For now just delete.
         self.transaction_repo.delete(tx_id).await
     }
     pub async fn get_transactions(&self, game_id: Uuid) -> Result<Vec<Transaction>, anyhow::Error> {
@@ -58,12 +70,13 @@ mod tests {
     async fn test_transfer_success() {
         let mut mock_tx_repo = MockTransactionRepository::new();
         let mock_part_repo = MockParticipantRepository::new();
+        let (tx, _) = broadcast::channel(10);
 
         mock_tx_repo.expect_execute_transfer()
             .times(1)
             .returning(|tx| Ok(tx));
 
-        let service = TransactionService::new(Arc::new(mock_tx_repo), Arc::new(mock_part_repo));
+        let service = TransactionService::new(Arc::new(mock_tx_repo), Arc::new(mock_part_repo), tx);
         let result = service.transfer(
             Uuid::new_v4(), 
             Some(Uuid::new_v4()), 
@@ -79,6 +92,7 @@ mod tests {
     async fn test_delete_transaction() {
         let mut mock_tx_repo = MockTransactionRepository::new();
         let mock_part_repo = MockParticipantRepository::new();
+        let (tx, _) = broadcast::channel(10);
         let tx_id = Uuid::new_v4();
 
         mock_tx_repo.expect_delete()
@@ -86,7 +100,7 @@ mod tests {
             .times(1)
             .returning(|_| Ok(()));
 
-        let service = TransactionService::new(Arc::new(mock_tx_repo), Arc::new(mock_part_repo));
+        let service = TransactionService::new(Arc::new(mock_tx_repo), Arc::new(mock_part_repo), tx);
         let result = service.delete_transaction(tx_id).await;
         assert!(result.is_ok());
     }

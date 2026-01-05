@@ -37,6 +37,5 @@ export const useGetDiceHistory = (gameId: string) => {
             const { data } = await api.get(`/games/${gameId}/rolls`);
             return data as DiceHistoryItem[];
         },
-        refetchInterval: 3000, // Poll every 3s
     });
 };

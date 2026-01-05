@@ -8,6 +8,8 @@ use crate::application::{
     special_dice_service::SpecialDiceService,
 };
 use crate::config::Config;
+use tokio::sync::broadcast;
+use crate::domain::events::GameEvent;
 
 #[derive(Clone)]
 pub struct AppState {
@@ -18,4 +20,5 @@ pub struct AppState {
     pub roulette_service: Arc<RouletteService>,
     pub special_dice_service: Arc<SpecialDiceService>,
     pub config: Config,
+    pub tx: broadcast::Sender<GameEvent>,
 }

@@ -27,7 +27,6 @@ export const useGetTransactions = (gameId: string) => {
             return data as Transaction[];
         },
         enabled: !!gameId,
-        refetchInterval: 3000, // Poll for history updates
     });
 };
 

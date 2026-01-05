@@ -20,7 +20,6 @@ export const useGetRouletteHistory = (gameId: string) => {
             const response = await api.get<RouletteSpinHistoryItem[]>(`/games/${gameId}/roulette`);
             return response.data;
         },
-        refetchInterval: 5000,
     });
 };
 

@@ -24,7 +24,7 @@ pub async fn record_spin(
         .roulette_service
         .record_spin(game_id, payload.user_id, payload.result_label, payload.result_value, payload.result_type)
         .await
-        .map_err(|e| {
+        .map_err(|e: anyhow::Error| {
             tracing::error!("Failed to record roulette spin: {}", e);
             (StatusCode::INTERNAL_SERVER_ERROR, e.to_string())
         })?;
@@ -40,7 +40,7 @@ pub async fn get_history(
         .roulette_service
         .get_history(game_id)
         .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+        .map_err(|e: anyhow::Error| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
     Ok(Json(history))
 }
