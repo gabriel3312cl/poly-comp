@@ -147,7 +147,7 @@ impl TransactionRepository for PostgresTransactionRepository {
         Ok(rec)
     }
 
-    async fn claim_jackpot(&self, game_id: Uuid, user_id: Uuid) -> Result<bigdecimal::BigDecimal, anyhow::Error> {
+    async fn claim_jackpot(&self, game_id: Uuid, user_id: Uuid) -> Result<Transaction, anyhow::Error> {
         let mut tx = self.pool.begin().await?;
 
         // 1. Get Jackpot Balance lock
@@ -159,7 +159,7 @@ impl TransactionRepository for PostgresTransactionRepository {
         let amount = row.0;
 
         if amount <= bigdecimal::BigDecimal::from(0) {
-            return Ok(amount); // Nothing to claim
+            return Err(anyhow::anyhow!("Jackpot is empty"));
         }
 
         // 2. Find Participant ID for User
@@ -188,10 +188,11 @@ impl TransactionRepository for PostgresTransactionRepository {
             .await?;
 
         // 5. Record Transaction
-        sqlx::query(
+        let rec = sqlx::query_as::<_, Transaction>(
             r#"
             INSERT INTO transactions (id, game_id, from_participant_id, to_participant_id, amount, description, created_at)
             VALUES ($1, $2, $3, $4, $5, $6, $7)
+            RETURNING *
             "#
         )
         .bind(Uuid::new_v4())
@@ -201,11 +202,11 @@ impl TransactionRepository for PostgresTransactionRepository {
         .bind(&amount)
         .bind("Jackpot Win!".to_string())
         .bind(time::OffsetDateTime::now_utc())
-        .execute(&mut *tx)
+        .fetch_one(&mut *tx)
         .await?;
 
         tx.commit().await?;
 
-        Ok(amount)
+        Ok(rec)
     }
 }

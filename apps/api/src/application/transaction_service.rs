@@ -55,8 +55,15 @@ impl TransactionService {
         self.transaction_repo.find_by_game(game_id).await
     }
 
-    pub async fn claim_jackpot(&self, game_id: Uuid, user_id: Uuid) -> Result<bigdecimal::BigDecimal, anyhow::Error> {
-        self.transaction_repo.claim_jackpot(game_id, user_id).await
+    pub async fn claim_jackpot(&self, game_id: Uuid, user_id: Uuid) -> Result<Transaction, anyhow::Error> {
+        let result = self.transaction_repo.claim_jackpot(game_id, user_id).await;
+
+        if let Ok(transaction) = &result {
+             // Broadcast event
+             let _ = self.tx.send(GameEvent::TransactionCreated(transaction.clone()));
+        }
+
+        result
     }
 }
 

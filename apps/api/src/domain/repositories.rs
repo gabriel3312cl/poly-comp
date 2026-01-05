@@ -43,5 +43,5 @@ pub trait TransactionRepository {
         &self, 
         transaction: Transaction
     ) -> Result<Transaction, anyhow::Error>;
-    async fn claim_jackpot(&self, game_id: Uuid, user_id: Uuid) -> Result<bigdecimal::BigDecimal, anyhow::Error>;
+    async fn claim_jackpot(&self, game_id: Uuid, user_id: Uuid) -> Result<Transaction, anyhow::Error>;
 }

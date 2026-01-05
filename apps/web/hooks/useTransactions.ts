@@ -72,8 +72,8 @@ export const useClaimJackpot = () => {
         onSuccess: (_, variables) => {
             queryClient.invalidateQueries({ queryKey: ['transactions', variables.gameId] });
             queryClient.invalidateQueries({ queryKey: ['participants', variables.gameId] });
-            // Also need to refresh GameSession to see jackpot balance go to 0, if UI showed it.
-            // But we don't display it yet.
+            // Also refresh game session to update jackpot balance
+            queryClient.invalidateQueries({ queryKey: ['game', variables.gameId] });
         },
     });
 };

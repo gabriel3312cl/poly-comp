@@ -308,7 +308,8 @@ export default function GameSessionPage() {
                 <Grid size={{ xs: 12, md: 4 }}>
                     <RouletteTool
                         gameId={id as string}
-                        myParticipantId={myParticipant?.user_id}
+                        myParticipantId={myParticipant?.id}
+                        myUserId={myParticipant?.user_id}
                         jackpotBalance={Number(game?.jackpot_balance || 0)}
                     />
                     <CalculatorTool />

@@ -44,10 +44,11 @@ const OPTIONS: RouletteOption[] = [
 interface RouletteToolProps {
     gameId: string;
     myParticipantId?: string;
+    myUserId?: string;
     jackpotBalance: number;
 }
 
-export default function RouletteTool({ gameId, myParticipantId, jackpotBalance }: RouletteToolProps) {
+export default function RouletteTool({ gameId, myParticipantId, myUserId, jackpotBalance }: RouletteToolProps) {
     const transferMutation = usePerformTransfer();
     const claimJackpotMutation = useClaimJackpot();
 
@@ -117,10 +118,10 @@ export default function RouletteTool({ gameId, myParticipantId, jackpotBalance }
                 }
 
                 // Record History
-                if (myParticipantId) {
+                if (myUserId) {
                     recordSpinMutation.mutate({
                         gameId,
-                        userId: myParticipantId,
+                        userId: myUserId,
                         resultLabel: winner.label,
                         resultValue: winner.value,
                         resultType: winner.type
@@ -271,7 +272,20 @@ export default function RouletteTool({ gameId, myParticipantId, jackpotBalance }
                 confirmText="Claim Jackpot"
                 severity="success"
                 onClose={() => setConfirmJackpotOpen(false)}
-                onConfirm={() => claimJackpotMutation.mutate({ gameId })}
+                onConfirm={() => claimJackpotMutation.mutate({ gameId }, {
+                    onSuccess: (data: any) => {
+                        playSound('/success.mp3');
+                        if (myUserId) {
+                            recordSpinMutation.mutate({
+                                gameId,
+                                userId: myUserId,
+                                resultLabel: 'Jackpot Manually!',
+                                resultValue: data?.amount ? Number(data.amount) : 0,
+                                resultType: 'green'
+                            });
+                        }
+                    }
+                })}
             />
         </Paper>
     );

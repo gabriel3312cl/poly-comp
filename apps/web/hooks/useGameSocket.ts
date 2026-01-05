@@ -32,12 +32,14 @@ export const useGameSocket = (gameId: string) => {
                     queryClient.invalidateQueries({ queryKey: ['transactions', gameId] });
                     // Also refresh participants balance
                     queryClient.invalidateQueries({ queryKey: ['participants', gameId] });
+                    // Refresh game session (for jackpot balance)
+                    queryClient.invalidateQueries({ queryKey: ['game', gameId] });
                 } else if (message.type === 'DiceRolled') {
-                    queryClient.invalidateQueries({ queryKey: ['dice_history', gameId] });
+                    queryClient.invalidateQueries({ queryKey: ['dice_rolls', gameId] });
                 } else if (message.type === 'RouletteSpun') {
-                    queryClient.invalidateQueries({ queryKey: ['roulette_history', gameId] });
+                    queryClient.invalidateQueries({ queryKey: ['roulette-history', gameId] });
                 } else if (message.type === 'SpecialDiceRolled') {
-                    queryClient.invalidateQueries({ queryKey: ['special_dice_history', gameId] });
+                    queryClient.invalidateQueries({ queryKey: ['special-dice-history', gameId] });
                 } else if (message.type === 'ParticipantUpdated') {
                     queryClient.invalidateQueries({ queryKey: ['participants', gameId] });
                 }

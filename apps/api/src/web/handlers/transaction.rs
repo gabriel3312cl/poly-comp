@@ -63,7 +63,7 @@ pub async fn claim_jackpot(
     auth_user: AuthorizedUser,
 ) -> impl IntoResponse {
     match state.transaction_service.claim_jackpot(game_id, auth_user.user_id).await {
-        Ok(amount) => (StatusCode::OK, Json(amount)).into_response(),
+        Ok(tx) => (StatusCode::OK, Json(tx)).into_response(),
         Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
     }
 }
