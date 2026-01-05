@@ -22,6 +22,8 @@ import {
 } from '@mui/material';
 import CasinoIcon from '@mui/icons-material/Casino';
 import HistoryIcon from '@mui/icons-material/History';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { useRollDice, useGetDiceHistory, DiceHistoryItem } from '@/hooks/useDice';
 import { parseServerDate } from '@/utils/formatters';
 
@@ -33,6 +35,7 @@ export default function DiceSection({ gameId }: DiceSectionProps) {
     const [sides, setSides] = useState<number>(6);
     const [count, setCount] = useState<number>(2);
     const [showConfig, setShowConfig] = useState<boolean>(false);
+    const [showHistory, setShowHistory] = useState<boolean>(false);
 
     const { mutate: roll, isPending: rolling, data: lastRoll } = useRollDice(gameId);
     const { data: history = [] } = useGetDiceHistory(gameId);
@@ -136,38 +139,50 @@ export default function DiceSection({ gameId }: DiceSectionProps) {
                     <Divider orientation="vertical" flexItem sx={{ display: { xs: 'none', md: 'block' } }} />
 
                     {/* History */}
-                    <Box flex={1} maxHeight={300} overflow="auto">
-                        <Stack direction="row" alignItems="center" gap={1} mb={1}>
+                    <Box flex={1}>
+                        <Stack
+                            direction="row"
+                            alignItems="center"
+                            gap={1}
+                            mb={1}
+                            onClick={() => setShowHistory(!showHistory)}
+                            sx={{ cursor: 'pointer', userSelect: 'none' }}
+                        >
                             <HistoryIcon fontSize="small" color="disabled" />
                             <Typography variant="caption" color="text.secondary">Recent History</Typography>
+                            {showHistory ? <ExpandLessIcon fontSize="small" color="disabled" /> : <ExpandMoreIcon fontSize="small" color="disabled" />}
                         </Stack>
-                        <List dense>
-                            {history.length === 0 && <Typography variant="body2" color="text.disabled">No rolls yet.</Typography>}
-                            {history.map((item, idx) => {
-                                const ts = parseServerDate(item.roll.created_at);
-                                const timeStr = ts ? new Date(ts).toLocaleTimeString() : '';
-                                return (
-                                    <ListItem key={item.roll.id || idx} divider>
-                                        <ListItemText
-                                            primary={
-                                                <Stack direction="row" justifyContent="space-between" alignItems="center">
-                                                    <Typography fontWeight="bold" variant="body2">{item.user_name}</Typography>
-                                                    <Typography fontWeight="800" color="secondary.light">{item.roll.total}</Typography>
-                                                </Stack>
-                                            }
-                                            secondary={
-                                                <Stack direction="row" justifyContent="space-between" mt={0.5}>
-                                                    <Typography variant="caption" color="text.disabled">
-                                                        {item.roll.dice_count}d{item.roll.dice_sides}: [{item.roll.results.join(', ')}]
-                                                    </Typography>
-                                                    <Typography variant="caption" color="text.disabled">{timeStr}</Typography>
-                                                </Stack>
-                                            }
-                                        />
-                                    </ListItem>
-                                );
-                            })}
-                        </List>
+                        <Collapse in={showHistory}>
+                            <Box maxHeight={300} overflow="auto">
+                                <List dense>
+                                    {history.length === 0 && <Typography variant="body2" color="text.disabled">No rolls yet.</Typography>}
+                                    {history.map((item, idx) => {
+                                        const ts = parseServerDate(item.roll.created_at);
+                                        const timeStr = ts ? new Date(ts).toLocaleTimeString() : '';
+                                        return (
+                                            <ListItem key={item.roll.id || idx} divider>
+                                                <ListItemText
+                                                    primary={
+                                                        <Stack direction="row" justifyContent="space-between" alignItems="center">
+                                                            <Typography fontWeight="bold" variant="body2">{item.user_name}</Typography>
+                                                            <Typography fontWeight="800" color="secondary.light">{item.roll.total}</Typography>
+                                                        </Stack>
+                                                    }
+                                                    secondary={
+                                                        <Stack direction="row" justifyContent="space-between" mt={0.5}>
+                                                            <Typography variant="caption" color="text.disabled">
+                                                                {item.roll.dice_count}d{item.roll.dice_sides}: [{item.roll.results.join(', ')}]
+                                                            </Typography>
+                                                            <Typography variant="caption" color="text.disabled">{timeStr}</Typography>
+                                                        </Stack>
+                                                    }
+                                                />
+                                            </ListItem>
+                                        );
+                                    })}
+                                </List>
+                            </Box>
+                        </Collapse>
                     </Box>
                 </Stack>
             </CardContent>
