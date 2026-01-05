@@ -26,6 +26,15 @@ export default function TransferDialog({ open, onClose, onConfirm, targetName, t
     const [amount, setAmount] = useState('');
     const [description, setDescription] = useState('');
 
+    const handleAddAmount = (val: number) => {
+        const currentVal = parseFloat(amount) || 0;
+        setAmount((currentVal + val).toString());
+    };
+
+    const handleClear = () => {
+        setAmount('');
+    };
+
     const handleSubmit = () => {
         const val = parseFloat(amount);
         if (isNaN(val) || val <= 0) return;
@@ -48,6 +57,9 @@ export default function TransferDialog({ open, onClose, onConfirm, targetName, t
         return 'success';
     };
 
+    // Preset values requested by user
+    const PRESETS = [1, 5, 10, 20, 50, 100, 500, 1000];
+
     return (
         <Dialog open={open} onClose={onClose} fullWidth maxWidth="xs">
             <DialogTitle fontWeight="bold" color={getColor() === 'error' ? 'error.main' : 'success.main'}>
@@ -66,6 +78,34 @@ export default function TransferDialog({ open, onClose, onConfirm, targetName, t
                             style: { fontSize: '1.5rem', fontWeight: 'bold' }
                         }}
                     />
+
+                    {/* Preset Buttons Grid */}
+                    <Stack spacing={1}>
+                        <Typography variant="caption" color="text.secondary">Add amount:</Typography>
+                        <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ gap: 1 }}>
+                            {PRESETS.map(val => (
+                                <Button
+                                    key={val}
+                                    variant="outlined"
+                                    size="small"
+                                    onClick={() => handleAddAmount(val)}
+                                    sx={{ minWidth: '60px', flexGrow: 1 }}
+                                >
+                                    +{val}
+                                </Button>
+                            ))}
+                        </Stack>
+                    </Stack>
+
+                    <Button
+                        variant="text"
+                        color="inherit"
+                        onClick={handleClear}
+                        disabled={!amount}
+                    >
+                        Clear Amount
+                    </Button>
+
                     <TextField
                         label="For what? (Optional)"
                         placeholder="Rent, Tax, Go..."
@@ -73,15 +113,6 @@ export default function TransferDialog({ open, onClose, onConfirm, targetName, t
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
                     />
-
-                    {/* Quick Buttons */}
-                    <Stack direction="row" spacing={1}>
-                        {[50, 100, 200, 500].map(val => (
-                            <Button key={val} variant="outlined" size="small" onClick={() => setAmount(val.toString())}>
-                                ${val}
-                            </Button>
-                        ))}
-                    </Stack>
                 </Stack>
             </DialogContent>
             <DialogActions sx={{ p: 2 }}>
