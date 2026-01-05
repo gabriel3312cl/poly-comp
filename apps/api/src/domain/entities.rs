@@ -124,3 +124,61 @@ pub struct DiceRollHistory {
     pub first_name: String,
     pub last_name: String,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+pub struct RouletteSpin {
+    pub id: Uuid,
+    pub game_id: Uuid,
+    pub user_id: Uuid,
+    pub result_label: String,
+    pub result_value: i32,
+    pub result_type: String, // 'red' or 'green'
+    #[serde(with = "time::serde::rfc3339::option")]
+    pub created_at: Option<OffsetDateTime>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+pub struct RouletteSpinHistory {
+    pub id: Uuid,
+    pub game_id: Uuid,
+    pub user_id: Uuid,
+    pub result_label: String,
+    pub result_value: i32,
+    pub result_type: String,
+    #[serde(with = "time::serde::rfc3339::option")]
+    pub created_at: Option<OffsetDateTime>,
+    // Joined fields
+    pub first_name: String,
+    pub last_name: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+pub struct SpecialDiceRoll {
+    pub id: Uuid,
+    pub game_id: Uuid,
+    pub user_id: Uuid,
+    pub die_name: String,
+    pub die_id: String,
+    pub face_label: String,
+    pub face_value: Option<i32>,
+    pub face_action: Option<String>,
+    #[serde(with = "time::serde::rfc3339::option")]
+    pub created_at: Option<OffsetDateTime>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+pub struct SpecialDiceRollHistory {
+    pub id: Uuid,
+    pub game_id: Uuid,
+    pub user_id: Uuid,
+    pub die_name: String,
+    pub die_id: String,
+    pub face_label: String,
+    pub face_value: Option<i32>,
+    pub face_action: Option<String>,
+    #[serde(with = "time::serde::rfc3339::option")]
+    pub created_at: Option<OffsetDateTime>,
+    // Joined fields
+    pub first_name: String,
+    pub last_name: String,
+}

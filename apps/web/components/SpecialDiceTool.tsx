@@ -29,6 +29,12 @@ import AttachMoneyIcon from '@mui/icons-material/AttachMoney'; // Ganar
 import PanToolIcon from '@mui/icons-material/PanTool'; // Tomar tarjeta
 import { usePerformTransfer } from '@/hooks/useTransactions';
 import ConfirmDialog from './ConfirmDialog';
+import { useGetSpecialDiceHistory, useRecordSpecialDiceRoll } from '@/hooks/useSpecialDice';
+import { parseServerDate } from '@/utils/formatters';
+import HistoryIcon from '@mui/icons-material/History';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import { List, ListItem, ListItemText, Collapse } from '@mui/material';
 
 // Define Die Interfaces
 interface DieFace {
@@ -99,11 +105,16 @@ interface SpecialDiceToolProps {
 export default function SpecialDiceTool({ gameId, myParticipantId }: SpecialDiceToolProps) {
     const { mutate: transfer } = usePerformTransfer();
 
+    // History Hooks
+    const { data: history = [] } = useGetSpecialDiceHistory(gameId);
+    const recordRollMutation = useRecordSpecialDiceRoll();
+
     // Result State
     const [resultOpen, setResultOpen] = useState(false);
     const [rolledDie, setRolledDie] = useState<SpecialDie | null>(null);
     const [resultFace, setResultFace] = useState<DieFace | null>(null);
     const [isRolling, setIsRolling] = useState(false);
+    const [showHistory, setShowHistory] = useState(false); // Added for history collapse
 
     // Confirmation State
     const [confirmOpen, setConfirmOpen] = useState(false);
@@ -156,6 +167,19 @@ export default function SpecialDiceTool({ gameId, myParticipantId }: SpecialDice
             } else if (face.action === 'JAIL') {
                 playSound('/fail.mp3'); // Optional sound for Jail
             }
+
+            // Record History
+            if (myParticipantId) {
+                recordRollMutation.mutate({
+                    gameId,
+                    userId: myParticipantId,
+                    dieName: die.name,
+                    dieId: die.id,
+                    faceLabel: face.label,
+                    faceValue: face.value,
+                    faceAction: face.action
+                });
+            }
         }, 800);
 
         setConfirmOpen(false);
@@ -200,6 +224,53 @@ export default function SpecialDiceTool({ gameId, myParticipantId }: SpecialDice
                     </Grid>
                 ))}
             </Grid>
+
+            {/* History Section */}
+            <Box width="100%" mt={3}>
+                <Stack
+                    direction="row"
+                    alignItems="center"
+                    gap={1}
+                    mb={1}
+                    onClick={() => setShowHistory(!showHistory)}
+                    sx={{ cursor: 'pointer', userSelect: 'none' }}
+                >
+                    <HistoryIcon fontSize="small" color="disabled" />
+                    <Typography variant="caption" color="text.secondary">Dice History</Typography>
+                    {showHistory ? <ExpandLessIcon fontSize="small" color="disabled" /> : <ExpandMoreIcon fontSize="small" color="disabled" />}
+                </Stack>
+                <Collapse in={showHistory}>
+                    <Box maxHeight={200} overflow="auto" border="1px solid rgba(255,255,255,0.1)" borderRadius={1}>
+                        <List dense disablePadding>
+                            {history.length === 0 && <Box p={1}><Typography variant="body2" color="text.disabled">No rolls yet.</Typography></Box>}
+                            {history.map((item) => {
+                                const ts = parseServerDate(item.created_at);
+                                const timeStr = ts ? new Date(ts).toLocaleTimeString() : '';
+                                return (
+                                    <ListItem key={item.id} divider>
+                                        <ListItemText
+                                            primaryTypographyProps={{ component: 'div', variant: 'body2' }}
+                                            secondaryTypographyProps={{ component: 'div', variant: 'caption' }}
+                                            primary={
+                                                <Stack direction="row" justifyContent="space-between">
+                                                    <Typography fontWeight="bold">{item.first_name}</Typography>
+                                                    <Typography fontWeight="bold">{item.die_name}</Typography>
+                                                </Stack>
+                                            }
+                                            secondary={
+                                                <Stack direction="row" justifyContent="space-between" mt={0.5}>
+                                                    <Typography variant="caption" color="text.secondary">{item.face_label}</Typography>
+                                                    <Typography variant="caption">{timeStr}</Typography>
+                                                </Stack>
+                                            }
+                                        />
+                                    </ListItem>
+                                );
+                            })}
+                        </List>
+                    </Box>
+                </Collapse>
+            </Box>
 
             {/* Result Dialog */}
             <Dialog open={resultOpen} onClose={handleClose} maxWidth="xs" fullWidth>

@@ -35,32 +35,7 @@ async fn main() -> anyhow::Result<()> {
     
     tracing::info!("Database connected successfully.");
 
-    // Auto-Migrate Dice Rolls
-    // Auto-Migrate Dice Rolls
-    // 1. Create Table
-    sqlx::query(r#"
-    CREATE TABLE IF NOT EXISTS dice_rolls (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        game_id UUID NOT NULL REFERENCES game_sessions(id) ON DELETE CASCADE,
-        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        dice_count INT NOT NULL,
-        dice_sides INT NOT NULL,
-        results JSONB NOT NULL,
-        total INT NOT NULL,
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-    );
-    "#).execute(&pool).await.unwrap_or_else(|e| {
-        tracing::error!("Failed to create dice_rolls table: {}", e);
-        Default::default()
-    });
 
-    // 2. Create Index
-    sqlx::query(r#"
-    CREATE INDEX IF NOT EXISTS idx_dice_rolls_game_id ON dice_rolls(game_id);
-    "#).execute(&pool).await.unwrap_or_else(|e| {
-        tracing::error!("Failed to create index for dice_rolls: {}", e);
-        Default::default()
-    });
 
     // Repositories
     let user_repo = std::sync::Arc::new(infrastructure::postgres::user_repository::PostgresUserRepository::new(pool.clone()));
@@ -68,18 +43,24 @@ async fn main() -> anyhow::Result<()> {
     let participant_repo = std::sync::Arc::new(infrastructure::postgres::participant_repository::PostgresParticipantRepository::new(pool.clone()));
     let transaction_repo = std::sync::Arc::new(infrastructure::postgres::transaction_repository::PostgresTransactionRepository::new(pool.clone()));
     let dice_repo = std::sync::Arc::new(infrastructure::postgres::dice_repository::PostgresDiceRepository::new(pool.clone()));
+    let roulette_repo = std::sync::Arc::new(infrastructure::postgres::roulette_repository::PostgresRouletteRepository::new(pool.clone()));
+    let special_dice_repo = std::sync::Arc::new(infrastructure::postgres::special_dice_repository::PostgresSpecialDiceRepository::new(pool.clone()));
 
     // Services
     let user_service = std::sync::Arc::new(application::user_service::UserService::new(user_repo));
     let game_service = std::sync::Arc::new(application::game_service::GameService::new(game_repo, participant_repo.clone()));
     let transaction_service = std::sync::Arc::new(application::transaction_service::TransactionService::new(transaction_repo, participant_repo));
     let dice_service = std::sync::Arc::new(application::dice_service::DiceService::new(dice_repo));
+    let roulette_service = std::sync::Arc::new(application::roulette_service::RouletteService::new(roulette_repo));
+    let special_dice_service = std::sync::Arc::new(application::special_dice_service::SpecialDiceService::new(special_dice_repo));
 
     let app_state = state::AppState {
         user_service,
         game_service,
         transaction_service,
         dice_service,
+        roulette_service,
+        special_dice_service,
         config: config.clone(),
     };
 
@@ -113,6 +94,12 @@ async fn main() -> anyhow::Result<()> {
         // Dice Routes
         .route("/games/:id/roll", axum::routing::post(web::handlers::dice::roll_dice))
         .route("/games/:id/rolls", axum::routing::get(web::handlers::dice::get_history))
+        // Roulette Routes
+        .route("/games/:id/roulette", axum::routing::get(web::handlers::roulette::get_history)
+            .post(web::handlers::roulette::record_spin))
+        // Special Dice Routes
+        .route("/games/:id/special-dice", axum::routing::get(web::handlers::special_dice::get_history)
+            .post(web::handlers::special_dice::record_roll))
         .layer(tower_http::trace::TraceLayer::new_for_http())
         .layer(
             tower_http::cors::CorsLayer::new()

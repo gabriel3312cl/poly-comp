@@ -14,8 +14,12 @@ import DataUsageIcon from '@mui/icons-material/DataUsage'; // Wheel icon equival
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents'; // Trophy icon
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import HistoryIcon from '@mui/icons-material/History';
 import { usePerformTransfer, useClaimJackpot } from '@/hooks/useTransactions';
 import ConfirmDialog from './ConfirmDialog';
+import { useGetRouletteHistory, useRecordSpin } from '@/hooks/useRoulette';
+import { parseServerDate } from '@/utils/formatters';
+import { List, ListItem, ListItemText, Divider } from '@mui/material';
 
 type OptionType = 'red' | 'green';
 
@@ -47,8 +51,13 @@ export default function RouletteTool({ gameId, myParticipantId, jackpotBalance }
     const transferMutation = usePerformTransfer();
     const claimJackpotMutation = useClaimJackpot();
 
+    // History Hooks
+    const { data: history = [] } = useGetRouletteHistory(gameId);
+    const recordSpinMutation = useRecordSpin();
+
     const [isOpen, setIsOpen] = useState(false);
     const [isSpinning, setIsSpinning] = useState(false);
+    const [showHistory, setShowHistory] = useState(false);
     const [selectedOption, setSelectedOption] = useState<RouletteOption | null>(null);
     const [displayIndex, setDisplayIndex] = useState(0);
 
@@ -105,6 +114,17 @@ export default function RouletteTool({ gameId, myParticipantId, jackpotBalance }
                             to_participant_id: null,
                         });
                     }
+                }
+
+                // Record History
+                if (myParticipantId) {
+                    recordSpinMutation.mutate({
+                        gameId,
+                        userId: myParticipantId,
+                        resultLabel: winner.label,
+                        resultValue: winner.value,
+                        resultType: winner.type
+                    });
                 }
             }
         }, speed);
@@ -184,6 +204,53 @@ export default function RouletteTool({ gameId, myParticipantId, jackpotBalance }
                     >
                         WIN JACKPOT MANUALLY
                     </Button>
+
+                    {/* History Section */}
+                    <Box width="100%" mt={3}>
+                        <Stack
+                            direction="row"
+                            alignItems="center"
+                            gap={1}
+                            mb={1}
+                            onClick={() => setShowHistory(!showHistory)}
+                            sx={{ cursor: 'pointer', userSelect: 'none' }}
+                        >
+                            <HistoryIcon fontSize="small" color="disabled" />
+                            <Typography variant="caption" color="text.secondary">Spin History</Typography>
+                            {showHistory ? <ExpandLessIcon fontSize="small" color="disabled" /> : <ExpandMoreIcon fontSize="small" color="disabled" />}
+                        </Stack>
+                        <Collapse in={showHistory}>
+                            <Box maxHeight={200} overflow="auto" border="1px solid rgba(255,255,255,0.1)" borderRadius={1}>
+                                <List dense disablePadding>
+                                    {history.length === 0 && <Box p={1}><Typography variant="body2" color="text.disabled">No spins yet.</Typography></Box>}
+                                    {history.map((item) => {
+                                        const ts = parseServerDate(item.created_at);
+                                        const timeStr = ts ? new Date(ts).toLocaleTimeString() : '';
+                                        return (
+                                            <ListItem key={item.id} divider>
+                                                <ListItemText
+                                                    primaryTypographyProps={{ component: 'div', variant: 'body2' }}
+                                                    secondaryTypographyProps={{ component: 'div', variant: 'caption' }}
+                                                    primary={
+                                                        <Stack direction="row" justifyContent="space-between">
+                                                            <Typography fontWeight="bold">{item.first_name}</Typography>
+                                                            <Typography
+                                                                color={item.result_type === 'green' ? 'success.main' : 'error.main'}
+                                                                fontWeight="bold"
+                                                            >
+                                                                {item.result_label}
+                                                            </Typography>
+                                                        </Stack>
+                                                    }
+                                                    secondary={timeStr}
+                                                />
+                                            </ListItem>
+                                        );
+                                    })}
+                                </List>
+                            </Box>
+                        </Collapse>
+                    </Box>
                 </Box>
             </Collapse>
 

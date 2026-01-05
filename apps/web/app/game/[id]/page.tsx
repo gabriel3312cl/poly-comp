@@ -293,14 +293,14 @@ export default function GameSessionPage() {
                     <DiceSection gameId={id} />
 
                     {/* Special Dice */}
-                    <SpecialDiceTool gameId={id} myParticipantId={myParticipant?.id} />
+                    <SpecialDiceTool gameId={id} myParticipantId={myParticipant?.user_id} />
                 </Grid>
 
                 {/* History Column */}
                 <Grid size={{ xs: 12, md: 4 }}>
                     <RouletteTool
                         gameId={id as string}
-                        myParticipantId={myParticipant?.id}
+                        myParticipantId={myParticipant?.user_id}
                         jackpotBalance={Number(game?.jackpot_balance || 0)}
                     />
                     <CalculatorTool />
