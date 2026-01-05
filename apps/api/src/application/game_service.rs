@@ -36,6 +36,7 @@ impl GameService {
             host_user_id,
             name: "New Monopoly Game".to_string(), // Default name
             status: GameStatus::WAITING.to_string(),
+            jackpot_balance: BigDecimal::from(0),
             created_at: Some(time::OffsetDateTime::now_utc()),
             ended_at: None,
         };
@@ -178,6 +179,7 @@ mod tests {
                 host_user_id: host_id,
                 name: "New Monopoly Game".to_string(),
                 status: "WAITING".to_string(),
+                jackpot_balance: BigDecimal::from(0),
                 created_at: None,
                 ended_at: None,
             })));
@@ -217,6 +219,7 @@ mod tests {
                 host_user_id: Uuid::new_v4(),
                 name: "Game".to_string(),
                 status: "ACTIVE".to_string(),
+                jackpot_balance: BigDecimal::from(0),
                 created_at: None,
                 ended_at: None,
             })));
@@ -243,6 +246,7 @@ mod tests {
                 host_user_id: Uuid::new_v4(),
                 name: "Game".to_string(),
                 status: "WAITING".to_string(),
+                jackpot_balance: BigDecimal::from(0),
                 created_at: None,
                 ended_at: None,
             })));
