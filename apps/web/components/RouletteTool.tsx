@@ -38,9 +38,10 @@ const OPTIONS: RouletteOption[] = [
 interface RouletteToolProps {
     gameId: string;
     myParticipantId?: string;
+    jackpotBalance: number;
 }
 
-export default function RouletteTool({ gameId, myParticipantId }: RouletteToolProps) {
+export default function RouletteTool({ gameId, myParticipantId, jackpotBalance }: RouletteToolProps) {
     const transferMutation = usePerformTransfer();
     const claimJackpotMutation = useClaimJackpot();
 
@@ -65,7 +66,7 @@ export default function RouletteTool({ gameId, myParticipantId }: RouletteToolPr
         setSelectedOption(null);
 
         let spinTime = 0;
-        const totalSpinTime = 2000 + Math.random() * 1000; // Random spin time between 2-3s
+        const totalSpinTime = 10000; // 10 seconds fixed duration
         const speed = 50; // Update every 50ms
 
         intervalRef.current = setInterval(() => {
@@ -117,6 +118,9 @@ export default function RouletteTool({ gameId, myParticipantId }: RouletteToolPr
                     <DataUsageIcon color="secondary" />
                     <Typography fontWeight="bold">Roulette</Typography>
                 </Stack>
+                <Typography variant="body2" color="success.main" fontWeight="bold">
+                    Jackpot: ${jackpotBalance.toLocaleString()}
+                </Typography>
                 {isOpen ? <ExpandLessIcon /> : <ExpandMoreIcon />}
             </Box>
 
@@ -149,6 +153,11 @@ export default function RouletteTool({ gameId, myParticipantId }: RouletteToolPr
                                     ? selectedOption.label
                                     : 'Press Spin'}
                         </Typography>
+                        {!isSpinning && !selectedOption && (
+                            <Typography variant="caption" sx={{ opacity: 0.8, mt: 1 }}>
+                                Jackpot Pool: ${jackpotBalance.toLocaleString()}
+                            </Typography>
+                        )}
                     </Box>
 
                     <Button

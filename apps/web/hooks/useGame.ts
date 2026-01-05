@@ -9,6 +9,7 @@ export interface GameSession {
     name: string;
     status: 'WAITING' | 'ACTIVE' | 'FINISHED';
     created_at: string;
+    jackpot_balance: number; // Added field
 }
 
 export interface GameParticipant {

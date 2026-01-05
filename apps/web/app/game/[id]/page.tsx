@@ -255,6 +255,7 @@ export default function GameSessionPage() {
                     <RouletteTool
                         gameId={id as string}
                         myParticipantId={myParticipant?.id}
+                        jackpotBalance={Number(game?.jackpot_balance || 0)}
                     />
                     <CalculatorTool />
 
