@@ -116,6 +116,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/games/:id/cards/market/exchange", axum::routing::post(web::handlers::card::exchange_market_card))
         .route("/games/:id/cards/inventory", axum::routing::get(web::handlers::card::get_inventory))
         .route("/games/:id/cards/use", axum::routing::post(web::handlers::card::use_card))
+        .route("/games/:id/cards/inventory/:inventory_id", axum::routing::delete(web::handlers::card::discard_card))
         .layer(tower_http::trace::TraceLayer::new_for_http())
         .layer(
             tower_http::cors::CorsLayer::new()

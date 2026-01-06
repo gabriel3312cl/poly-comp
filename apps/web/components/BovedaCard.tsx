@@ -2,6 +2,7 @@ import { Card, Box, Typography, Button, IconButton, Chip } from '@mui/material';
 import MonetizationOnIcon from '@mui/icons-material/MonetizationOn';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import DeleteIcon from '@mui/icons-material/Delete'; // Added
 
 interface BovedaCardProps {
     title: string;
@@ -15,11 +16,13 @@ interface BovedaCardProps {
     onBuy?: () => void;
     onExchange?: () => void;
     onUse?: () => void;
+    onDiscard?: () => void; // Added
 
     // UI State
     purchasable?: boolean;
     canExchange?: boolean;
     useable?: boolean;
+    discardable?: boolean; // Added
     disabled?: boolean;
 }
 
@@ -34,8 +37,8 @@ const getColorHex = (color?: string) => {
 
 export default function BovedaCard({
     title, description, cost, color, type, actionType,
-    onBuy, onExchange, onUse,
-    purchasable, canExchange, useable, disabled
+    onBuy, onExchange, onUse, onDiscard,
+    purchasable, canExchange, useable, discardable, disabled
 }: BovedaCardProps) {
     const borderColor = getColorHex(color);
 
@@ -125,6 +128,26 @@ export default function BovedaCard({
                         Use
                     </Button>
                 )}
+
+                {discardable && onDiscard && (
+                    <Button
+                        startIcon={<DeleteIcon />}
+                        variant="outlined"
+                        color="error"
+                        size="small"
+                        onClick={onDiscard}
+                        disabled={disabled}
+                        fullWidth={!useable && !purchasable && !canExchange} // Full width if only action
+                        sx={useable ? { maxWidth: '40px', minWidth: '40px', p: 0 } : {}} // Compact if sharing space? Or just let flex handle it.
+                    >
+                        {useable ? "" : "Discard"}
+                    </Button>
+                )}
+                {/* 
+                   Wait, showing just icon if 'Use' is present might be cleaner.
+                   If useable and discardable: Use [DeleteIcon]
+                   If only discardable: [       Discard       ]
+                */}
             </Box>
         </Card>
     );

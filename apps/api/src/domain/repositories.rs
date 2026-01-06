@@ -59,6 +59,8 @@ pub trait CardRepository {
     async fn get_boveda_market(&self, game_id: Uuid) -> Result<Vec<crate::domain::entities::GameBovedaMarket>, anyhow::Error>;
     async fn set_boveda_market_slot(&self, game_id: Uuid, slot_index: i32, card_id: Uuid) -> Result<(), anyhow::Error>;
     async fn clear_boveda_market_slot(&self, game_id: Uuid, slot_index: i32) -> Result<(), anyhow::Error>;
+    async fn find_all_participant_cards_in_game(&self, game_id: Uuid) -> Result<Vec<Uuid>, anyhow::Error>;
+    async fn find_owner_of_card_title(&self, game_id: Uuid, card_title: &str) -> Result<Option<Uuid>, anyhow::Error>; // Returns participant_id
 
     // Inventory
     async fn add_to_inventory(&self, participant_id: Uuid, card_id: Uuid) -> Result<crate::domain::entities::ParticipantCard, anyhow::Error>;

@@ -123,6 +123,18 @@ export const useCards = (gameId: string) => {
         },
     });
 
+    const discardCardMutation = useMutation({
+        mutationFn: async (inventoryId: string) => {
+            await axios.delete(
+                `${API_URL}/games/${gameId}/cards/inventory/${inventoryId}`,
+                { headers }
+            );
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['inventory', gameId] });
+        },
+    });
+
     return {
         market,
         marketLoading,
@@ -132,5 +144,6 @@ export const useCards = (gameId: string) => {
         buyMarketCardMutation,
         exchangeMarketCardMutation,
         useCardMutation,
+        discardCardMutation,
     };
 };

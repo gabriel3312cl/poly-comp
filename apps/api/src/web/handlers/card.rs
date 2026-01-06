@@ -102,3 +102,14 @@ pub async fn use_card(
         Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
     }
 }
+
+pub async fn discard_card(
+    State(state): State<AppState>,
+    Path((game_id, inventory_id)): Path<(Uuid, Uuid)>,
+    auth_user: AuthorizedUser,
+) -> impl IntoResponse {
+    match state.card_service.discard_card(game_id, auth_user.user_id, inventory_id).await {
+        Ok(_) => (StatusCode::OK, Json("Success")).into_response(),
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
+    }
+}

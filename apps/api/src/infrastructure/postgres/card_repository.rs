@@ -117,6 +117,34 @@ impl CardRepository for PostgresCardRepository {
         Ok(())
     }
 
+    async fn find_all_participant_cards_in_game(&self, game_id: Uuid) -> Result<Vec<Uuid>, anyhow::Error> {
+        let rows = sqlx::query_scalar::<_, Uuid>(
+            "SELECT pc.card_id FROM participant_cards pc JOIN game_participants gp ON pc.participant_id = gp.id WHERE gp.game_id = $1"
+        )
+        .bind(game_id)
+        .fetch_all(&self.pool)
+        .await?;
+        Ok(rows)
+    }
+
+    async fn find_owner_of_card_title(&self, game_id: Uuid, card_title: &str) -> Result<Option<Uuid>, anyhow::Error> {
+        let row: Option<Uuid> = sqlx::query_scalar(
+            r#"
+            SELECT pc.participant_id 
+            FROM participant_cards pc 
+            JOIN game_participants gp ON pc.participant_id = gp.id 
+            JOIN cards c ON pc.card_id = c.id
+            WHERE gp.game_id = $1 AND c.title = $2 
+            LIMIT 1
+            "#
+        )
+        .bind(game_id)
+        .bind(card_title)
+        .fetch_optional(&self.pool)
+        .await?;
+        Ok(row)
+    }
+
     // Inventory
     async fn add_to_inventory(&self, participant_id: Uuid, card_id: Uuid) -> Result<ParticipantCard, anyhow::Error> {
         let pc = sqlx::query_as::<_, ParticipantCard>(

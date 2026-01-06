@@ -137,12 +137,29 @@ impl CardService {
              }
         }
         
+        // Uniqueness Logic
+        let owned_ids = self.card_repo.find_all_participant_cards_in_game(game_id).await?;
+        let market_cards = self.card_repo.get_boveda_market(game_id).await?;
+        let active_ids: Vec<Uuid> = market_cards.iter().map(|m| m.card_id).chain(owned_ids.into_iter()).collect();
+
+        // Available Pool
+        let mut available_deck: Vec<Card> = all_boveda.into_iter().filter(|c| !active_ids.contains(&c.id)).collect();
+
+        if available_deck.is_empty() {
+             tracing::warn!("No more unique Boveda cards available to refill market.");
+             return Ok(self.card_repo.get_boveda_market(game_id).await?);
+        }
+        
+        // Shuffle to randomize
+        use rand::seq::SliceRandom; 
+        available_deck.shuffle(&mut rand::rng());
+        
         for slot in missing_indices {
-             let random_card = all_boveda.choose(&mut rand::rng()).ok_or(anyhow::anyhow!("No boveda cards"))?;
-             tracing::debug!("Assigning card {} to slot {}", random_card.title, slot);
-             if let Err(e) = self.card_repo.set_boveda_market_slot(game_id, slot, random_card.id).await {
-                 tracing::error!("Failed to set market slot {}: {}", slot, e);
-                 return Err(e);
+             if let Some(card) = available_deck.pop() {
+                 tracing::debug!("Assigning card {} to slot {}", card.title, slot);
+                 if let Err(e) = self.card_repo.set_boveda_market_slot(game_id, slot, card.id).await {
+                     tracing::error!("Failed to set market slot {}: {}", slot, e);
+                 }
              }
         }
 
@@ -165,13 +182,29 @@ impl CardService {
         
         let cost = item.cost.clone().unwrap_or(BigDecimal::from(0));
 
+        // Special Logic: La Bóveda Owner
+        let boveda_owner_id = self.card_repo.find_owner_of_card_title(game_id, "La Bóveda").await?;
+        let mut recipient_id: Option<Uuid> = None;
+        let mut final_cost = cost.clone();
+
+        if let Some(owner_id) = boveda_owner_id {
+            if owner_id == detail.id {
+                // Buyer owns La Bóveda -> Free
+                final_cost = BigDecimal::from(0);
+                // Still log transaction as 0? Yes.
+            } else {
+                // Pay Owner
+                recipient_id = Some(owner_id);
+            }
+        }
+
         // 3. Deduct Funds
         self.transaction_repo.execute_transfer(Transaction {
              id: Uuid::new_v4(),
              game_id,
              from_participant_id: Some(detail.id),
-             to_participant_id: None,
-             amount: cost,
+             to_participant_id: recipient_id,
+             amount: final_cost,
              description: Some(format!("Bought Boveda Card: {}", item.title.as_deref().unwrap_or("Unknown"))),
              created_at: Some(time::OffsetDateTime::now_utc())
         }).await?;
@@ -221,10 +254,28 @@ impl CardService {
                             || card_item.type_.as_deref() == Some("arca") 
                             || card_item.type_.as_deref() == Some("fortuna"); 
 
+         // Block passive usage
+         if card_item.color.as_deref() == Some("yellow") {
+             return Err(anyhow::anyhow!("Passive cards cannot be used manually. They are always active."));
+         }
+
          if is_consumable {
              self.card_repo.remove_from_inventory(inventory_id).await?;
          }
 
+         Ok(())
+    }
+
+    pub async fn discard_card(&self, game_id: Uuid, user_id: Uuid, inventory_id: Uuid) -> Result<(), anyhow::Error> {
+         let detail = self.participant_repo.find_details_by_game_id(game_id).await?
+             .into_iter().find(|p| p.user_id == user_id)
+             .ok_or(anyhow::anyhow!("User not participant"))?;
+        
+         let inventory = self.card_repo.get_inventory(detail.id).await?;
+         let card_item = inventory.iter().find(|pc| pc.id == inventory_id).ok_or(anyhow::anyhow!("Card not in inventory"))?;
+
+         self.card_repo.remove_from_inventory(inventory_id).await?;
+         self.card_repo.log_usage(game_id, detail.id, card_item.card_id, Some("Discarded card".to_string())).await?;
          Ok(())
     }
 }
