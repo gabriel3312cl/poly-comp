@@ -58,7 +58,7 @@ impl CardService {
         self.card_repo.mark_card_drawn(game_id, card.id).await?;
 
         // 2. Check if "Keepable" (e.g. Sal de la Carcel)
-        if card.action_type.as_deref() == Some("keep") {
+        if card.action_type.as_deref() == Some("keep") || card.type_ == "bonificacion" {
             // Add to inventory
             // Find participant ID
             let detail = self.participant_repo.find_details_by_game_id(game_id).await?
@@ -298,7 +298,8 @@ impl CardService {
          // Handle regular effects
          let is_consumable = card_item.color.as_deref() == Some("red") 
                             || card_item.type_.as_deref() == Some("arca") 
-                            || card_item.type_.as_deref() == Some("fortuna"); 
+                            || card_item.type_.as_deref() == Some("fortuna")
+                            || card_item.type_.as_deref() == Some("bonificacion"); 
 
          // Block passive usage
          if card_item.color.as_deref() == Some("yellow") {

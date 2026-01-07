@@ -48,7 +48,7 @@ export default function CardDrawer({ open, onClose, gameId, type }: CardDrawerPr
                             onClick={handleDraw}
                             sx={{
                                 width: 200, height: 280,
-                                bgcolor: type === 'arca' ? '#1976D2' : type === 'fortuna' ? '#FFA000' : '#7B1FA2',
+                                bgcolor: type === 'arca' ? '#1976D2' : type === 'fortuna' ? '#FFA000' : '#9C27B0',
                                 borderRadius: 3,
                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                                 color: 'white',

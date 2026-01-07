@@ -25,7 +25,7 @@ import TransactionHistory from '@/components/TransactionHistory';
 import TransferDialog from '@/components/TransferDialog';
 // import CalculatorTool from '@/components/CalculatorTool';
 import RouletteTool from '@/components/RouletteTool';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance'; // Bank Icon
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import ExitToAppIcon from '@mui/icons-material/ExitToApp';
@@ -36,10 +36,11 @@ import InventorySection from '@/components/InventorySection';
 import BovedaMarket from '@/components/BovedaMarket';
 import { parseServerDate } from '@/utils/formatters';
 import { useAuthStore } from '@/store/authStore';
-import DiceSection from '@/components/DiceSection';
+import DiceSection, { DiceSectionHandle } from '@/components/DiceSection';
 // import SpecialDiceTool from '@/components/SpecialDiceTool';
 import FloatingTools from '@/components/FloatingTools';
 import SettingsIcon from '@mui/icons-material/Settings';
+import StarIcon from '@mui/icons-material/Star'; // Added
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import PauseIcon from '@mui/icons-material/Pause';
 import StopIcon from '@mui/icons-material/Stop';
@@ -97,6 +98,12 @@ export default function GameSessionPage() {
     // Mutations
     const myParticipant = participants.find((p: any) => p.user_id === user?.id);
     const { mutate: transfer, isPending: transferring } = usePerformTransfer();
+
+    // Ref for remotely triggering dice roll
+    // Add import { useRef } from 'react'; if missing, but it is imported as 'react' default or named
+    // Actually imports are: import { useState } from 'react'; in lines 28.
+    // I need to add useRef to imports too.
+    const diceSectionRef = useRef<DiceSectionHandle>(null);
 
     // Sound Effect for Incoming Payments
     useEffect(() => {
@@ -269,6 +276,12 @@ export default function GameSessionPage() {
         });
     };
 
+    const handleFloatingRoll = () => {
+        if (diceSectionRef.current) {
+            diceSectionRef.current.openRollDialog();
+        }
+    };
+
     return (
         <Container maxWidth="lg" sx={{ mt: 4, mb: 10 }}>
             {/* Game Over Banner */}
@@ -374,7 +387,7 @@ export default function GameSessionPage() {
                     </Box>
 
                     {/* Dice Roller */}
-                    <DiceSection gameId={id} />
+                    <DiceSection gameId={id} ref={diceSectionRef} />
 
                     {/* Special Dice */}
                     {/* Special Dice Removed (Moved to Float) */}
@@ -415,6 +428,15 @@ export default function GameSessionPage() {
                                         startIcon={<AutoFixHighIcon />}
                                     >
                                         Fortuna
+                                    </Button>
+                                    <Button
+                                        variant="contained"
+                                        sx={{ bgcolor: '#9C27B0', '&:hover': { bgcolor: '#7B1FA2' } }}
+                                        onClick={() => { setManualCardType('bonificacion'); setManualDrawerOpen(true); }}
+                                        fullWidth
+                                        startIcon={<StarIcon />}
+                                    >
+                                        Bonif.
                                     </Button>
                                 </Stack>
                             </Box>
@@ -607,6 +629,7 @@ export default function GameSessionPage() {
                 gameId={game?.id || ''}
                 myParticipantId={myParticipant?.id}
                 myUserId={myParticipant?.user_id}
+                onRollDice={handleFloatingRoll}
             />
 
         </Container >

@@ -1,6 +1,4 @@
-'use client';
-
-import { useState, useEffect } from 'react';
+import { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import {
     Box,
     Typography,
@@ -38,7 +36,11 @@ interface DiceSectionProps {
     gameId: string;
 }
 
-export default function DiceSection({ gameId }: DiceSectionProps) {
+export interface DiceSectionHandle {
+    openRollDialog: () => void;
+}
+
+const DiceSection = forwardRef<DiceSectionHandle, DiceSectionProps>(({ gameId }, ref) => {
     const [sides, setSides] = useState<number>(6);
     const [count, setCount] = useState<number>(2);
     const [showConfig, setShowConfig] = useState<boolean>(false);
@@ -50,6 +52,13 @@ export default function DiceSection({ gameId }: DiceSectionProps) {
     const { data: history = [] } = useGetDiceHistory(gameId);
 
     const [confirmRollOpen, setConfirmRollOpen] = useState(false);
+
+    // Expose handle for external triggering
+    useImperativeHandle(ref, () => ({
+        openRollDialog: () => {
+            setConfirmRollOpen(true);
+        }
+    }));
 
     // Effect to play sound on new roll
     useEffect(() => {
@@ -256,4 +265,7 @@ export default function DiceSection({ gameId }: DiceSectionProps) {
             />
         </Card>
     );
-}
+});
+
+DiceSection.displayName = "DiceSection";
+export default DiceSection;

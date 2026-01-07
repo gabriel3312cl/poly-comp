@@ -3,117 +3,107 @@ import { useState } from 'react';
 import {
     Box,
     Typography,
-    Button,
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    DialogActions,
     Fab,
     Tooltip,
-    Stack
+    Stack,
+    Dialog,
+    DialogContent,
+    DialogTitle,
+    DialogActions,
+    Button
 } from '@mui/material';
 import CasinoIcon from '@mui/icons-material/Casino';
 import { useRollDice } from '@/hooks/useDice';
+import ConfirmDialog from './ConfirmDialog';
 
 interface FloatingDiceRollerProps {
     gameId: string;
 }
 
 export default function FloatingDiceRoller({ gameId }: FloatingDiceRollerProps) {
-    const [open, setOpen] = useState(false);
+    const [confirmOpen, setConfirmOpen] = useState(false);
+    const [resultOpen, setResultOpen] = useState(false);
     const [result, setResult] = useState<number[] | null>(null);
     const { mutate: roll, isPending } = useRollDice(gameId);
 
-    const handleRoll = (count: number) => {
-        new Audio('/dice.mp3').play().catch(e => console.error(e));
-        roll({ sides: 6, count }, {
+    const handleFabClick = () => {
+        setConfirmRollOpen(true);
+    };
+
+    const [confirmRollOpen, setConfirmRollOpen] = useState(false);
+
+    const handleConfirmRoll = () => {
+        const audio = new Audio('/dice.mp3');
+        audio.play().catch(e => console.error(e));
+
+        // Default to Standard Monopoly Roll: 2 Dice, 6 Sides, Auto-Salary ON
+        roll({ sides: 6, count: 2, autoSalary: true }, {
             onSuccess: (data) => {
                 setResult(data.results);
-                new Audio('/notification.mp3').play().catch(e => console.error(e));
+                setConfirmRollOpen(false);
+                setResultOpen(true);
+
+                // Doubles sound check logic could be here, but simpler to just play notification
+                // new Audio('/notification.mp3').play().catch(e => console.error(e));
             }
         });
     };
 
-    const handleClose = () => {
-        setOpen(false);
-        setResult(null);
-    };
-
     return (
         <>
-            <Tooltip title="Roll Dice">
+            <Tooltip title="Roll Dice (Shortcut)">
                 <Fab
-                    color="error"
-                    onClick={() => setOpen(true)}
+                    color="error" // Main Dice Color
+                    onClick={handleFabClick}
                     size="medium"
+                    sx={{
+                        background: 'linear-gradient(45deg, #FE6B8B 30%, #FF8E53 90%)',
+                        boxShadow: '0 3px 5px 2px rgba(255, 105, 135, .3)',
+                    }}
                 >
                     <CasinoIcon />
                 </Fab>
             </Tooltip>
 
-            <Dialog open={open} onClose={handleClose} maxWidth="xs" fullWidth>
-                <DialogTitle textAlign="center">Roll Standard Dice</DialogTitle>
-                <DialogContent>
-                    <Stack spacing={3} alignItems="center" py={2}>
-                        {result ? (
-                            <Box textAlign="center" animation="fadeIn 0.5s">
-                                <Stack direction="row" spacing={2} justifyContent="center" mb={2}>
-                                    {result.map((val, i) => (
-                                        <Box
-                                            key={i}
-                                            sx={{
-                                                width: 60,
-                                                height: 60,
-                                                bgcolor: 'white',
-                                                color: 'black',
-                                                borderRadius: 2,
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                fontSize: '2rem',
-                                                fontWeight: 'bold',
-                                                boxShadow: 3
-                                            }}
-                                        >
-                                            {val}
-                                        </Box>
-                                    ))}
-                                </Stack>
-                                <Typography variant="h5" fontWeight="bold">
-                                    Total: {result.reduce((a, b) => a + b, 0)}
-                                </Typography>
-                            </Box>
-                        ) : (
-                            <Typography color="text.secondary">Select dice count to roll</Typography>
-                        )}
+            <ConfirmDialog
+                open={confirmRollOpen}
+                title="Roll Dice?"
+                description="Roll 2 standard dice?"
+                onConfirm={handleConfirmRoll}
+                onClose={() => setConfirmRollOpen(false)}
+                confirmText={isPending ? "Rolling..." : "Roll"}
+            />
 
-                        {!result && (
-                            <Stack direction="row" spacing={2}>
-                                <Button
-                                    variant="contained"
-                                    size="large"
-                                    onClick={() => handleRoll(1)}
-                                    disabled={isPending}
+            {/* Result Dialog (Simple) */}
+            <Dialog open={resultOpen} onClose={() => setResultOpen(false)} maxWidth="xs" fullWidth>
+                <DialogTitle textAlign="center" fontWeight="bold">Roll Result</DialogTitle>
+                <DialogContent>
+                    <Box textAlign="center" py={2}>
+                        <Stack direction="row" spacing={2} justifyContent="center" mb={2}>
+                            {result?.map((val, i) => (
+                                <Box
+                                    key={i}
+                                    sx={{
+                                        width: 60, height: 60,
+                                        bgcolor: 'white', color: 'black',
+                                        borderRadius: 2,
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        fontSize: '2rem', fontWeight: 'bold',
+                                        boxShadow: 3,
+                                        border: '1px solid #ddd'
+                                    }}
                                 >
-                                    1 Die
-                                </Button>
-                                <Button
-                                    variant="contained"
-                                    size="large"
-                                    onClick={() => handleRoll(2)}
-                                    disabled={isPending}
-                                >
-                                    2 Dice
-                                </Button>
-                            </Stack>
-                        )}
-                    </Stack>
+                                    {val}
+                                </Box>
+                            ))}
+                        </Stack>
+                        <Typography variant="h4" fontWeight="900" color="primary">
+                            Total: {result?.reduce((a, b) => a + b, 0)}
+                        </Typography>
+                    </Box>
                 </DialogContent>
                 <DialogActions sx={{ justifyContent: 'center', pb: 2 }}>
-                    {result ? (
-                        <Button onClick={() => setResult(null)} variant="outlined">Roll Again</Button>
-                    ) : null}
-                    <Button onClick={handleClose}>Close</Button>
+                    <Button onClick={() => setResultOpen(false)} variant="contained">OK</Button>
                 </DialogActions>
             </Dialog>
         </>
