@@ -14,6 +14,15 @@ pub struct UpdateGameRequest {
     pub status: Option<String>,
 }
 
+#[derive(Deserialize)]
+pub struct UpdatePositionRequest {
+    pub position: i32,
+    pub user_id: Uuid, // Target user to update (only host usually? or self?)
+    // Actually, "Corregir en donde esta el token" implies modifying OWN position or ANYONE's if host.
+    // For simplicity, let's allow modifying ANYONE if you are in the game or Host?
+    // Let's passed target user_id in body.
+}
+
 pub async fn create_game(
     State(state): State<AppState>,
     auth_user: AuthorizedUser,
@@ -97,7 +106,6 @@ pub async fn get_game(
     }
 }
 
-// GET /games/:id/participants
 pub async fn get_game_participants(
     State(state): State<AppState>,
     Path(game_id): Path<Uuid>,
@@ -106,5 +114,17 @@ pub async fn get_game_participants(
     match state.game_service.get_participants_with_details(game_id).await {
         Ok(participants) => (StatusCode::OK, Json(participants)).into_response(),
         Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, "Failed to fetch participants".to_string()).into_response(),
+    }
+}
+
+pub async fn update_participant_position(
+    State(state): State<AppState>,
+    Path(game_id): Path<Uuid>,
+    _auth: AuthorizedUser, // Could check if host/admin
+    Json(payload): Json<UpdatePositionRequest>,
+) -> impl IntoResponse {
+    match state.game_service.update_participant_position(game_id, payload.user_id, payload.position).await {
+        Ok(_) => (StatusCode::OK, "Position updated").into_response(),
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
     }
 }

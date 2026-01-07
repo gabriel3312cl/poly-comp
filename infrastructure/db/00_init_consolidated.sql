@@ -57,6 +57,7 @@ CREATE TABLE game_participants (
     game_id UUID NOT NULL REFERENCES game_sessions(id) ON DELETE CASCADE,
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     balance DECIMAL(15, 2) NOT NULL DEFAULT 1500.00, -- Default Monopoly starting money
+    position INTEGER NOT NULL DEFAULT 0, -- Board Position (0-39)
     joined_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(game_id, user_id)
 );

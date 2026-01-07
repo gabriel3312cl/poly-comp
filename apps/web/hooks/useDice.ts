@@ -20,8 +20,8 @@ export interface DiceHistoryItem {
 export const useRollDice = (gameId: string) => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: async (data: { sides: number; count: number }) => {
-            const res = await api.post(`/games/${gameId}/roll`, data);
+        mutationFn: async (data: { sides: number; count: number; autoSalary?: boolean }) => {
+            const res = await api.post(`/games/${gameId}/roll`, { ...data, auto_salary: data.autoSalary });
             return res.data as DiceRoll;
         },
         onSuccess: () => {

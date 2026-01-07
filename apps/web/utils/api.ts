@@ -80,4 +80,9 @@ export const executeSpecialAction = async (gameId: string, action: string, targe
     return response.data;
 };
 
+export const updatePosition = async (gameId: string, userId: string, position: number) => {
+    const response = await api.put(`/games/${gameId}/participants`, { user_id: userId, position });
+    return response.data;
+};
+
 export default api;

@@ -66,7 +66,7 @@ impl GameRepository for PostgresGameRepository {
             SELECT DISTINCT g.* 
             FROM game_sessions g
             JOIN game_participants p ON g.id = p.game_id
-            WHERE p.user_id = $1
+            WHERE p.user_id = $1 AND g.host_user_id != $1
             ORDER BY g.created_at DESC
             "#
         )

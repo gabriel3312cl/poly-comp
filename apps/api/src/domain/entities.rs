@@ -70,6 +70,8 @@ pub struct Participant {
     pub user_id: Uuid,
     pub game_id: Uuid,
     pub balance: BigDecimal,
+    #[sqlx(default)]
+    pub position: i32,
     pub created_at: Option<OffsetDateTime>,
 }
 
@@ -79,6 +81,8 @@ pub struct GameParticipant {
     pub game_id: Uuid,
     pub user_id: Uuid,
     pub balance: BigDecimal,
+    #[sqlx(default)]
+    pub position: i32,
     pub joined_at: Option<OffsetDateTime>,
 }
 
@@ -88,6 +92,8 @@ pub struct ParticipantDetail {
     pub game_id: Uuid,
     pub user_id: Uuid,
     pub balance: BigDecimal,
+    #[sqlx(default)]
+    pub position: i32,
     pub username: String,
     pub first_name: String,
     pub last_name: String,

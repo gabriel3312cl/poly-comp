@@ -18,8 +18,14 @@ import {
     Chip,
     Divider,
     Paper,
-    Collapse
+
+    Collapse,
+    FormControlLabel,
+    Checkbox,
+    Snackbar,
+    Alert
 } from '@mui/material';
+import { getSpaceName } from '@/utils/boardSpaces';
 import CasinoIcon from '@mui/icons-material/Casino';
 import HistoryIcon from '@mui/icons-material/History';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -37,6 +43,8 @@ export default function DiceSection({ gameId }: DiceSectionProps) {
     const [count, setCount] = useState<number>(2);
     const [showConfig, setShowConfig] = useState<boolean>(false);
     const [showHistory, setShowHistory] = useState<boolean>(false);
+    const [autoSalary, setAutoSalary] = useState<boolean>(true);
+    const [notification, setNotification] = useState<{ open: boolean; message: string }>({ open: false, message: '' });
 
     const { mutate: roll, isPending: rolling, data: lastRoll } = useRollDice(gameId);
     const { data: history = [] } = useGetDiceHistory(gameId);
@@ -143,6 +151,31 @@ export default function DiceSection({ gameId }: DiceSectionProps) {
                         >
                             {rolling ? 'Rolling...' : 'ROLL DICE'}
                         </Button>
+
+                        <Box mt={2}>
+                            <FormControlLabel
+                                control={
+                                    <Checkbox
+                                        checked={autoSalary}
+                                        onChange={(e) => setAutoSalary(e.target.checked)}
+                                        color="success"
+                                    />
+                                }
+                                label={<Typography variant="caption" color="text.secondary">Auto-pay Salary ($200) on Go</Typography>}
+                            />
+                        </Box>
+
+                        {/* Notification Toast */}
+                        <Snackbar
+                            open={notification.open}
+                            autoHideDuration={4000}
+                            onClose={() => setNotification({ ...notification, open: false })}
+                            anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+                        >
+                            <Alert severity="success" variant="filled" onClose={() => setNotification({ ...notification, open: false })}>
+                                {notification.message}
+                            </Alert>
+                        </Snackbar>
 
                         {/* Current Result Display */}
                         {lastRoll && (

@@ -16,6 +16,22 @@ import AttachMoneyIcon from '@mui/icons-material/AttachMoney'; // Use as Pay Ico
 import CallReceivedIcon from '@mui/icons-material/CallReceived'; // Use as Request?
 import SendIcon from '@mui/icons-material/Send';
 import { useAuthStore } from '@/store/authStore';
+import { getSpaceName, BOARD_SPACES } from '@/utils/boardSpaces';
+import EditLocationIcon from '@mui/icons-material/EditLocation';
+import {
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    Button,
+    Select,
+    MenuItem,
+    FormControl,
+    InputLabel
+} from '@mui/material';
+import { useState } from 'react';
+import { useUpdatePosition } from '@/hooks/useGame';
+import { useParams } from 'next/navigation';
 
 interface ParticipantListProps {
     participants: GameParticipant[];
@@ -23,7 +39,27 @@ interface ParticipantListProps {
 }
 
 export default function ParticipantList({ participants, onTransfer }: ParticipantListProps) {
+    const { id: gameId } = useParams() as { id: string };
     const user = useAuthStore((state) => state.user);
+    const { mutate: updatePos } = useUpdatePosition();
+
+    // Dialog State
+    const [editPosOpen, setEditPosOpen] = useState(false);
+    const [selectedUser, setSelectedUser] = useState<string | null>(null);
+    const [newPosition, setNewPosition] = useState<number>(0);
+
+    const handleOpenEdit = (userId: string, currentPos: number) => {
+        setSelectedUser(userId);
+        setNewPosition(currentPos);
+        setEditPosOpen(true);
+    };
+
+    const handleSavePos = () => {
+        if (selectedUser) {
+            updatePos({ gameId, userId: selectedUser, position: newPosition });
+            setEditPosOpen(false);
+        }
+    };
 
     // Sort: Me first, then others
     const sorted = [...participants].sort((a, b) => {
@@ -115,11 +151,49 @@ export default function ParticipantList({ participants, onTransfer }: Participan
                                         </Tooltip>
                                     </Stack>
                                 )}
+
+                                <Box mt={2}>
+                                    <Button
+                                        size="small"
+                                        variant="text"
+                                        color="inherit"
+                                        startIcon={<EditLocationIcon />}
+                                        onClick={() => handleOpenEdit(p.user_id, p.position)}
+                                    >
+                                        Pos: {getSpaceName(p.position)}
+                                    </Button>
+                                </Box>
                             </CardContent>
                         </Card>
                     </Grid>
                 );
             })}
+
+            {/* Position Correction Dialog */}
+            <Dialog open={editPosOpen} onClose={() => setEditPosOpen(false)}>
+                <DialogTitle>Correct Player Position</DialogTitle>
+                <DialogContent sx={{ minWidth: 300, mt: 1 }}>
+                    <FormControl fullWidth size="small">
+                        <InputLabel>Board Space</InputLabel>
+                        <Select
+                            value={newPosition}
+                            label="Board Space"
+                            onChange={(e) => setNewPosition(Number(e.target.value))}
+                            MenuProps={{ PaperProps: { sx: { maxHeight: 400 } } }}
+                        >
+                            {BOARD_SPACES.map((space) => (
+                                <MenuItem key={space.index} value={space.index}>
+                                    {space.index}. {space.name}
+                                </MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setEditPosOpen(false)}>Cancel</Button>
+                    <Button onClick={handleSavePos} variant="contained">Update</Button>
+                </DialogActions>
+            </Dialog>
         </Grid>
     );
 }

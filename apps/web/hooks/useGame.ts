@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import api from '../utils/api';
+import api, { updatePosition } from '../utils/api';
 import { useRouter } from 'next/navigation';
 
 export interface GameSession {
@@ -20,6 +20,7 @@ export interface GameParticipant {
     username: string; // Added from backend update
     first_name: string;
     last_name: string;
+    position: number;
 }
 
 // Fetch user's active games (Wait, backend doesn't have "list my games" yet? 
@@ -149,5 +150,17 @@ export const useDeleteGame = () => {
             queryClient.invalidateQueries({ queryKey: ['games'] });
             router.push('/history?deleted=true');
         },
+    });
+};
+export const useUpdatePosition = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async ({ gameId, userId, position }: { gameId: string; userId: string; position: number }) => {
+            const res = await updatePosition(gameId, userId, position);
+            return res;
+        },
+        onSuccess: (_, variables) => {
+            queryClient.invalidateQueries({ queryKey: ['participants', variables.gameId] });
+        }
     });
 };

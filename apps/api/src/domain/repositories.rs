@@ -31,6 +31,7 @@ pub trait ParticipantRepository {
     async fn add_participant(&self, participant: GameParticipant) -> Result<GameParticipant, anyhow::Error>;
     async fn find_by_game_id(&self, game_id: Uuid) -> Result<Vec<GameParticipant>, anyhow::Error>;
     async fn find_details_by_game_id(&self, game_id: Uuid) -> Result<Vec<ParticipantDetail>, anyhow::Error>;
+    async fn update_position(&self, game_id: Uuid, user_id: Uuid, position: i32) -> Result<(), anyhow::Error>;
     async fn remove_participant(&self, game_id: Uuid, user_id: Uuid) -> Result<(), anyhow::Error>;
 }
 

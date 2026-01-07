@@ -12,6 +12,8 @@ use crate::web::extractors::AuthorizedUser;
 pub struct RollRequest {
     pub sides: i32,
     pub count: i32,
+    #[serde(default)] // Default to false if missing
+    pub auto_salary: bool,
 }
 
 pub async fn roll_dice(
@@ -23,7 +25,7 @@ pub async fn roll_dice(
     if payload.count < 1 || payload.count > 8 {
         return (StatusCode::BAD_REQUEST, "Dice count must be between 1 and 8").into_response();
     }
-    match state.dice_service.roll_dice(game_id, auth_user.user_id, payload.sides, payload.count).await {
+    match state.dice_service.roll_dice(game_id, auth_user.user_id, payload.sides, payload.count, payload.auto_salary).await {
         Ok(roll) => (StatusCode::CREATED, Json(roll)).into_response(),
         Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
     }

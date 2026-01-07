@@ -36,6 +36,15 @@ async fn main() -> anyhow::Result<()> {
     
     tracing::info!("Database connected successfully.");
 
+    // Simple migration: Ensure position column exists
+    sqlx::query("ALTER TABLE game_participants ADD COLUMN IF NOT EXISTS position INTEGER DEFAULT 0;")
+        .execute(&pool)
+        .await
+        .map_err(|e| {
+             tracing::error!("Failed to run position migration: {}", e);
+             e
+        })?;
+
 
 
     // Repositories
@@ -53,9 +62,9 @@ async fn main() -> anyhow::Result<()> {
     let (tx, _rx) = tokio::sync::broadcast::channel(100);
 
     let user_service = Arc::new(application::user_service::UserService::new(user_repo.clone()));
-    let game_service = Arc::new(application::game_service::GameService::new(game_repo.clone(), participant_repo.clone())); // Removed tx
+    let game_service = Arc::new(application::game_service::GameService::new(game_repo.clone(), participant_repo.clone(), tx.clone()));
     let transaction_service = Arc::new(application::transaction_service::TransactionService::new(transaction_repo.clone(), participant_repo.clone(), card_repo.clone(), tx.clone()));
-    let dice_service = Arc::new(application::dice_service::DiceService::new(dice_repo.clone(), tx.clone())); // Removed game_repo, participant_repo
+    let dice_service = Arc::new(application::dice_service::DiceService::new(dice_repo.clone(), participant_repo.clone(), transaction_service.clone(), tx.clone()));
     let roulette_service = Arc::new(application::roulette_service::RouletteService::new(roulette_repo.clone(), tx.clone())); // Removed transaction_repo, participant_repo
     let special_dice_service = Arc::new(application::special_dice_service::SpecialDiceService::new(special_dice_repo.clone(), tx.clone())); // Removed transaction_repo, participant_repo
     let card_service = Arc::new(application::card_service::CardService::new(card_repo.clone(), transaction_repo.clone(), game_repo.clone(), participant_repo.clone(), tx.clone()));
@@ -94,7 +103,8 @@ async fn main() -> anyhow::Result<()> {
             .delete(web::handlers::game::delete_game))
         .route("/games/:id/join", axum::routing::post(web::handlers::game::join_game))
         .route("/games/:id/leave", axum::routing::post(web::handlers::game::leave_game))
-        .route("/games/:id/participants", axum::routing::get(web::handlers::game::get_game_participants))
+        .route("/games/:id/participants", axum::routing::get(web::handlers::game::get_game_participants)
+            .put(web::handlers::game::update_participant_position))
         // Transaction Routes
         .route("/games/:id/transactions", axum::routing::get(web::handlers::transaction::get_transactions)
             .post(web::handlers::transaction::perform_transfer))

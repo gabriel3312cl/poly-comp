@@ -11,14 +11,16 @@ use crate::domain::{
 pub struct GameService {
     game_repo: Arc<dyn GameRepository + Send + Sync>,
     participant_repo: Arc<dyn ParticipantRepository + Send + Sync>,
+    tx: tokio::sync::broadcast::Sender<crate::domain::events::GameEvent>,
 }
 
 impl GameService {
     pub fn new(
         game_repo: Arc<dyn GameRepository + Send + Sync>,
         participant_repo: Arc<dyn ParticipantRepository + Send + Sync>,
+        tx: tokio::sync::broadcast::Sender<crate::domain::events::GameEvent>,
     ) -> Self {
-        Self { game_repo, participant_repo }
+        Self { game_repo, participant_repo, tx }
     }
 
     pub async fn create_game(&self, host_user_id: Uuid) -> Result<GameSession, anyhow::Error> {
@@ -77,6 +79,7 @@ impl GameService {
             game_id,
             user_id,
             balance: BigDecimal::from(1500), // Default start money
+            position: 0,
             joined_at: None,
         };
 
@@ -146,6 +149,33 @@ impl GameService {
     pub async fn get_played_games(&self, user_id: Uuid) -> Result<Vec<GameSession>, anyhow::Error> {
         self.game_repo.find_played_by_user(user_id).await
     }
+
+    pub async fn update_participant_position(&self, game_id: Uuid, user_id: Uuid, position: i32) -> Result<(), anyhow::Error> {
+        // Validate game exists
+        let _ = self.game_repo.find_by_id(game_id).await?
+            .ok_or_else(|| anyhow::anyhow!("Game not found"))?;
+
+        // Update Position
+        self.participant_repo.update_position(game_id, user_id, position).await?;
+
+        // Broadcast Event
+        if let Some(gp) = self.participant_repo.find_by_game_id(game_id).await?
+            .into_iter().find(|p| p.user_id == user_id) 
+        {
+             // Convert GameParticipant to Participant for event
+             let p = crate::domain::entities::Participant {
+                 id: gp.id,
+                 user_id: gp.user_id,
+                 game_id: gp.game_id,
+                 balance: gp.balance,
+                 position: gp.position,
+                 created_at: gp.joined_at,
+             };
+             let _ = self.tx.send(crate::domain::events::GameEvent::ParticipantUpdated(p));
+        }
+        
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -190,12 +220,12 @@ mod tests {
             .times(1)
             .returning(|_| Ok(vec![]));
 
-        // 4. Expect add_participant (host joining)
         mock_part_repo.expect_add_participant()
             .times(1)
             .returning(|p| Ok(p));
 
-        let service = GameService::new(Arc::new(mock_game_repo), Arc::new(mock_part_repo));
+        let (tx, _rx) = tokio::sync::broadcast::channel(10);
+        let service = GameService::new(Arc::new(mock_game_repo), Arc::new(mock_part_repo), tx);
         let result = service.create_game(host_id).await;
 
         assert!(result.is_ok());
@@ -222,9 +252,11 @@ mod tests {
                 jackpot_balance: BigDecimal::from(0),
                 created_at: None,
                 ended_at: None,
+                ended_at: None,
             })));
 
-        let service = GameService::new(Arc::new(mock_game_repo), Arc::new(mock_part_repo));
+        let (tx, _rx) = tokio::sync::broadcast::channel(10);
+        let service = GameService::new(Arc::new(mock_game_repo), Arc::new(mock_part_repo), tx);
         let result = service.join_game(game_id, Uuid::new_v4()).await;
 
         assert!(result.is_err());
@@ -255,7 +287,8 @@ mod tests {
             .with(eq(game_id), eq(user_id))
             .returning(|_, _| Ok(()));
 
-        let service = GameService::new(Arc::new(mock_game_repo), Arc::new(mock_part_repo));
+        let (tx, _rx) = tokio::sync::broadcast::channel(10);
+        let service = GameService::new(Arc::new(mock_game_repo), Arc::new(mock_part_repo), tx);
         let result = service.leave_game(game_id, user_id).await;
         assert!(result.is_ok());
     }

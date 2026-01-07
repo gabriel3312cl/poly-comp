@@ -60,13 +60,33 @@ import {
 import { useUpdateGame } from '@/hooks/useGame';
 import { useEffect } from 'react';
 import { useGameSocket } from '@/hooks/useGameSocket';
+import { getSpaceName } from '@/utils/boardSpaces';
+import { Snackbar, Alert as MuiAlert } from '@mui/material'; // Using MuiAlert
+import { useQueryClient } from '@tanstack/react-query';
 
 export default function GameSessionPage() {
     const { id } = useParams() as { id: string };
     const user = useAuthStore(state => state.user);
+    const queryClient = useQueryClient();
+
+    // Movement Notification
+    const [moveToast, setMoveToast] = useState<{ open: boolean; message: string }>({ open: false, message: '' });
 
     // WebSocket Connection
-    useGameSocket(id);
+    // WebSocket Connection
+    useGameSocket(id, (event: any) => {
+        if (event.type === 'ParticipantUpdated') {
+            const p = event.payload;
+            queryClient.invalidateQueries({ queryKey: ['participants', id] });
+
+            // Show toast if position changed (we don't have old position here easily, so just show current)
+            const spaceName = getSpaceName(p.position);
+            // Ideally we want user name, but payload is Participant struct which has user_id, not name.
+            // We can find name from current list (which might be stale, but good enough)
+            const pName = participants.find((old: any) => old.user_id === p.user_id)?.first_name || 'Player';
+            setMoveToast({ open: true, message: `${pName} landed on ${spaceName}` });
+        }
+    });
 
     // Queries
     const { data: game } = useGetGame(id);
@@ -572,6 +592,19 @@ export default function GameSessionPage() {
                     </Stack>
                 </Box>
             </Dialog>
+
+
+            {/* Global Movement Toast */}
+            <Snackbar
+                open={moveToast.open}
+                autoHideDuration={4000}
+                onClose={() => setMoveToast({ ...moveToast, open: false })}
+                anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+            >
+                <MuiAlert severity="info" variant="filled" onClose={() => setMoveToast({ ...moveToast, open: false })}>
+                    {moveToast.message}
+                </MuiAlert>
+            </Snackbar>
         </Container >
     );
 }

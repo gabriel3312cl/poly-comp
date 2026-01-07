@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 
-export const useGameSocket = (gameId: string) => {
+export const useGameSocket = (gameId: string, onEvent?: (event: any) => void) => {
     const queryClient = useQueryClient();
     const socketRef = useRef<WebSocket | null>(null);
 
@@ -42,6 +42,10 @@ export const useGameSocket = (gameId: string) => {
                     queryClient.invalidateQueries({ queryKey: ['special-dice-history', gameId] });
                 } else if (message.type === 'ParticipantUpdated') {
                     queryClient.invalidateQueries({ queryKey: ['participants', gameId] });
+                }
+
+                if (onEvent) {
+                    onEvent(message);
                 }
             } catch (e) {
                 console.error('Error parsing WS message:', e);

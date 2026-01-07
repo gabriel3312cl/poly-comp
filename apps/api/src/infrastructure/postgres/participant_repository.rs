@@ -46,7 +46,7 @@ impl ParticipantRepository for PostgresParticipantRepository {
         let participants = sqlx::query_as::<_, crate::domain::entities::ParticipantDetail>(
             r#"
             SELECT 
-                gp.id, gp.game_id, gp.user_id, gp.balance,
+                gp.id, gp.game_id, gp.user_id, gp.balance, gp.position,
                 u.username, u.first_name, u.last_name
             FROM game_participants gp
             JOIN users u ON gp.user_id = u.id
@@ -62,6 +62,16 @@ impl ParticipantRepository for PostgresParticipantRepository {
 
     async fn remove_participant(&self, game_id: Uuid, user_id: Uuid) -> Result<(), anyhow::Error> {
         sqlx::query("DELETE FROM game_participants WHERE game_id = $1 AND user_id = $2")
+            .bind(game_id)
+            .bind(user_id)
+            .execute(&self.pool)
+            .await?;
+        Ok(())
+    }
+
+    async fn update_position(&self, game_id: Uuid, user_id: Uuid, position: i32) -> Result<(), anyhow::Error> {
+        sqlx::query("UPDATE game_participants SET position = $1 WHERE game_id = $2 AND user_id = $3")
+            .bind(position)
             .bind(game_id)
             .bind(user_id)
             .execute(&self.pool)
