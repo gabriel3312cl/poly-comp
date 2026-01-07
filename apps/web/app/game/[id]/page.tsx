@@ -23,7 +23,7 @@ import { useGetTransactions, usePerformTransfer, useUndoTransaction } from '@/ho
 import ParticipantList from '@/components/ParticipantList';
 import TransactionHistory from '@/components/TransactionHistory';
 import TransferDialog from '@/components/TransferDialog';
-import CalculatorTool from '@/components/CalculatorTool';
+// import CalculatorTool from '@/components/CalculatorTool';
 import RouletteTool from '@/components/RouletteTool';
 import { useState } from 'react';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance'; // Bank Icon
@@ -37,7 +37,8 @@ import BovedaMarket from '@/components/BovedaMarket';
 import { parseServerDate } from '@/utils/formatters';
 import { useAuthStore } from '@/store/authStore';
 import DiceSection from '@/components/DiceSection';
-import SpecialDiceTool from '@/components/SpecialDiceTool';
+// import SpecialDiceTool from '@/components/SpecialDiceTool';
+import FloatingTools from '@/components/FloatingTools';
 import SettingsIcon from '@mui/icons-material/Settings';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import PauseIcon from '@mui/icons-material/Pause';
@@ -376,11 +377,7 @@ export default function GameSessionPage() {
                     <DiceSection gameId={id} />
 
                     {/* Special Dice */}
-                    <SpecialDiceTool
-                        gameId={id}
-                        myParticipantId={myParticipant?.id}
-                        myUserId={myParticipant?.user_id}
-                    />
+                    {/* Special Dice Removed (Moved to Float) */}
                 </Grid>
 
                 {/* History Column */}
@@ -453,7 +450,7 @@ export default function GameSessionPage() {
                         myUserId={myParticipant?.user_id}
                         jackpotBalance={Number(game?.jackpot_balance || 0)}
                     />
-                    <CalculatorTool />
+                    {/* Calculator Removed (Moved to Float) */}
 
                     <TransactionHistory
                         transactions={transactions}
@@ -605,6 +602,13 @@ export default function GameSessionPage() {
                     {moveToast.message}
                 </MuiAlert>
             </Snackbar>
+            {/* UI Layer */}
+            <FloatingTools
+                gameId={game?.id || ''}
+                myParticipantId={myParticipant?.id}
+                myUserId={myParticipant?.user_id}
+            />
+
         </Container >
     );
 }

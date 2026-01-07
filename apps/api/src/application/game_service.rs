@@ -83,7 +83,20 @@ impl GameService {
             joined_at: None,
         };
 
-        self.participant_repo.add_participant(participant).await
+        let p = self.participant_repo.add_participant(participant).await?;
+
+        // Broadcast Event
+        let event_p = crate::domain::entities::Participant {
+            id: p.id,
+            user_id: p.user_id,
+            game_id: p.game_id,
+            balance: p.balance.clone(),
+            position: p.position,
+            created_at: p.joined_at,
+        };
+        let _ = self.tx.send(crate::domain::events::GameEvent::ParticipantUpdated(event_p));
+
+        Ok(p)
     }
 
     pub async fn leave_game(&self, game_id: Uuid, user_id: Uuid) -> Result<(), anyhow::Error> {

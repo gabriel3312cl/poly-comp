@@ -22,6 +22,7 @@ export const useGetSpecialDiceHistory = (gameId: string) => {
             const response = await api.get(`/games/${gameId}/special-dice`);
             return response.data;
         },
+        enabled: !!gameId && gameId !== '',
     });
 };
 

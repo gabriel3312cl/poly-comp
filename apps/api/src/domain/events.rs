@@ -11,6 +11,7 @@ pub enum GameEvent {
     SpecialDiceRolled(SpecialDiceRoll),
     ParticipantUpdated(Participant),
     GameUpdated { id: Uuid, status: String }, // For status changes
+    MarketUpdated { game_id: Uuid },
 }
 
 impl GameEvent {
@@ -22,6 +23,7 @@ impl GameEvent {
             GameEvent::SpecialDiceRolled(s) => s.game_id,
             GameEvent::ParticipantUpdated(p) => p.game_id,
             GameEvent::GameUpdated { id, .. } => *id,
+            GameEvent::MarketUpdated { game_id } => *game_id,
         }
     }
 }

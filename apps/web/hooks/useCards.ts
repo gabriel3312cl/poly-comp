@@ -42,7 +42,7 @@ export const useCards = (gameId: string) => {
     // --- Queries ---
 
     const { data: market, isLoading: marketLoading } = useQuery({
-        queryKey: ['market', gameId],
+        queryKey: ['boveda-market', gameId],
         queryFn: async () => {
             const { data } = await axios.get<GameBovedaMarket[]>(`${API_URL}/games/${gameId}/cards/market`, { headers });
             return data;
@@ -88,7 +88,7 @@ export const useCards = (gameId: string) => {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['inventory', gameId] });
-            queryClient.invalidateQueries({ queryKey: ['market', gameId] });
+            queryClient.invalidateQueries({ queryKey: ['boveda-market', gameId] });
             queryClient.invalidateQueries({ queryKey: ['participants', gameId] }); // Money deducted
             queryClient.invalidateQueries({ queryKey: ['transactions', gameId] });
         },
@@ -104,7 +104,7 @@ export const useCards = (gameId: string) => {
             return data;
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['market', gameId] });
+            queryClient.invalidateQueries({ queryKey: ['boveda-market', gameId] });
         },
     });
 

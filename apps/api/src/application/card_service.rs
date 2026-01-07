@@ -228,6 +228,9 @@ impl CardService {
         // 6. Refresh Market immediately
         self.refresh_boveda_market(game_id).await?;
 
+        // 7. Broadcast Market Update
+        let _ = self.tx.send(GameEvent::MarketUpdated { game_id });
+
         Ok(pc)
     }
 
@@ -235,7 +238,12 @@ impl CardService {
         // Remove current
         self.card_repo.clear_boveda_market_slot(game_id, slot_index).await?;
         // Refresh will fill it with new random
-        self.refresh_boveda_market(game_id).await
+        let new_market = self.refresh_boveda_market(game_id).await?;
+        
+        // Broadcast
+        let _ = self.tx.send(GameEvent::MarketUpdated { game_id });
+
+        Ok(new_market)
     }
 
     // --- Inventory / Usage ---

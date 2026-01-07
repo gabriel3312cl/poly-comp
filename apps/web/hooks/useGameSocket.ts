@@ -42,6 +42,8 @@ export const useGameSocket = (gameId: string, onEvent?: (event: any) => void) =>
                     queryClient.invalidateQueries({ queryKey: ['special-dice-history', gameId] });
                 } else if (message.type === 'ParticipantUpdated') {
                     queryClient.invalidateQueries({ queryKey: ['participants', gameId] });
+                } else if (message.type === 'MarketUpdated') {
+                    queryClient.invalidateQueries({ queryKey: ['boveda-market', gameId] });
                 }
 
                 if (onEvent) {
