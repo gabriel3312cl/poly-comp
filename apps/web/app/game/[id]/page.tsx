@@ -67,6 +67,7 @@ import { useGameSocket } from '@/hooks/useGameSocket';
 import { getSpaceName } from '@/utils/boardSpaces';
 import { Snackbar, Alert as MuiAlert } from '@mui/material'; // Using MuiAlert
 import { useQueryClient } from '@tanstack/react-query';
+import { useGetDiceHistory } from '@/hooks/useDice';
 
 export default function GameSessionPage() {
     const { id } = useParams() as { id: string };
@@ -96,6 +97,7 @@ export default function GameSessionPage() {
     const { data: game } = useGetGame(id);
     const { data: participants = [] } = useGetParticipants(id);
     const { data: transactions = [] } = useGetTransactions(id);
+    const { data: diceHistory = [] } = useGetDiceHistory(id);
 
     // Mutations
     const myParticipant = participants.find((p: any) => p.user_id === user?.id);
@@ -409,7 +411,7 @@ export default function GameSessionPage() {
                         </Box>
                         <Collapse in={boardOpen}>
                             <Box p={3} pt={0}>
-                                <GameBoard participants={participants} />
+                                <GameBoard participants={participants} diceHistory={diceHistory} />
                             </Box>
                         </Collapse>
                     </Box>
