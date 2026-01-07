@@ -248,3 +248,10 @@ pub struct CardUsageHistory {
     pub first_name: Option<String>,
     pub card_title: Option<String>,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ParticipantCardWithUser {
+    pub user_id: Uuid,
+    pub user_name: String,
+    pub card: ParticipantCard,
+}

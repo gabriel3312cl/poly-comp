@@ -2,6 +2,7 @@ import { Box, Typography, Button, Dialog, DialogTitle, DialogContent, DialogActi
 import { useCards } from '@/hooks/useCards';
 import BovedaCard from './BovedaCard';
 import { useState } from 'react';
+import GlobalInventoryModal from './GlobalInventoryModal';
 
 interface InventorySectionProps {
     gameId: string;
@@ -11,6 +12,7 @@ export default function InventorySection({ gameId }: InventorySectionProps) {
     const { inventory, inventoryLoading, useCardMutation, discardCardMutation } = useCards(gameId);
     const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
     const [confirmDiscardId, setConfirmDiscardId] = useState<string | null>(null);
+    const [globalModalOpen, setGlobalModalOpen] = useState(false);
 
     const handleUseClick = (id: string) => {
         setSelectedCardId(id);
@@ -36,46 +38,53 @@ export default function InventorySection({ gameId }: InventorySectionProps) {
         }
     };
 
-    if (inventoryLoading) return <Typography variant="caption">Loading cards...</Typography>;
+    // Check for Dado de Compra
+    const hasDadoDeCompra = inventory?.some((c: any) => c.title === "Dado de Compra") ?? false;
 
-    if (!inventory || inventory.length === 0) {
-        return (
-            <Box p={2} textAlign="center">
-                <Typography variant="body2" color="text.secondary">
-                    You have no saved cards.
-                </Typography>
-            </Box>
-        );
-    }
+    if (inventoryLoading) return <Typography variant="caption">Loading cards...</Typography>;
 
     return (
         <Box sx={{ p: 2, overflowY: 'auto', maxHeight: '100%' }}>
-            <Typography variant="h6" gutterBottom>
-                My Cards ({inventory.length})
-            </Typography>
 
-            <Grid container spacing={2} direction="column">
-                {inventory.map((card) => {
-                    const isPassive = card.color === 'yellow';
-                    // Determine display color if missing
-                    const displayColor = card.color || (card.type_ === 'arca' ? 'blue' : 'orange');
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                <Typography variant="h6">
+                    My Cards ({inventory?.length || 0})
+                </Typography>
+                <Button variant="outlined" size="small" onClick={() => setGlobalModalOpen(true)}>
+                    View All {hasDadoDeCompra && "(Special Action)"}
+                </Button>
+            </Box>
 
-                    return (
-                        <Grid size={{ xs: 12 }} key={card.id}>
-                            <BovedaCard
-                                title={card.title}
-                                description={card.description}
-                                color={displayColor}
-                                useable={!isPassive}
-                                discardable={true}
-                                onUse={() => handleUseClick(card.id)}
-                                onDiscard={() => handleDiscardClick(card.id)}
-                                disabled={useCardMutation.isPending || discardCardMutation.isPending}
-                            />
-                        </Grid>
-                    );
-                })}
-            </Grid>
+            {!inventory || inventory.length === 0 ? (
+                <Box p={2} textAlign="center">
+                    <Typography variant="body2" color="text.secondary">
+                        You have no saved cards.
+                    </Typography>
+                </Box>
+            ) : (
+                <Grid container spacing={2} direction="column">
+                    {inventory.map((card) => {
+                        const isPassive = card.color === 'yellow';
+                        // Determine display color if missing
+                        const displayColor = card.color || (card.type_ === 'arca' ? 'blue' : 'orange');
+
+                        return (
+                            <Grid size={{ xs: 12 }} key={card.id}>
+                                <BovedaCard
+                                    title={card.title}
+                                    description={card.description}
+                                    color={displayColor}
+                                    useable={!isPassive}
+                                    discardable={true}
+                                    onUse={() => handleUseClick(card.id)}
+                                    onDiscard={() => handleDiscardClick(card.id)}
+                                    disabled={useCardMutation.isPending || discardCardMutation.isPending}
+                                />
+                            </Grid>
+                        );
+                    })}
+                </Grid>
+            )}
 
             {/* Use Confirmation Dialog */}
             <Dialog open={!!selectedCardId} onClose={() => setSelectedCardId(null)}>
@@ -109,6 +118,15 @@ export default function InventorySection({ gameId }: InventorySectionProps) {
                     </Button>
                 </DialogActions>
             </Dialog>
+
+            {/* Global Inventory Modal */}
+            <GlobalInventoryModal
+                open={globalModalOpen}
+                onClose={() => setGlobalModalOpen(false)}
+                gameId={gameId}
+                hasDadoDeCompra={hasDadoDeCompra}
+                myInventory={inventory || []}
+            />
         </Box>
     );
 }

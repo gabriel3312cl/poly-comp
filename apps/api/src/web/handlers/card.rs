@@ -113,3 +113,41 @@ pub async fn discard_card(
         Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
     }
 }
+
+// --- Special Actions ---
+
+pub async fn get_all_inventories(
+    State(state): State<AppState>,
+    Path(game_id): Path<Uuid>,
+    _auth_user: AuthorizedUser,
+) -> impl IntoResponse {
+    match state.card_service.get_all_inventories(game_id).await {
+        Ok(inv) => (StatusCode::OK, Json(inv)).into_response(),
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
+    }
+}
+
+#[derive(Deserialize)]
+pub struct SpecialActionRequest {
+    pub action: String, // "buy" | "destroy" | "exchange"
+    pub target_inventory_id: Uuid,
+    pub my_card_id: Option<Uuid>,
+}
+
+pub async fn execute_special_action(
+    State(state): State<AppState>,
+    Path(game_id): Path<Uuid>,
+    auth_user: AuthorizedUser,
+    Json(payload): Json<SpecialActionRequest>,
+) -> impl IntoResponse {
+    match state.card_service.execute_special_action(
+        game_id, 
+        auth_user.user_id, 
+        &payload.action, 
+        payload.target_inventory_id, 
+        payload.my_card_id
+    ).await {
+        Ok(_) => (StatusCode::OK, Json("Success")).into_response(),
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
+    }
+}

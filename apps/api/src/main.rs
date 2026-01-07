@@ -54,7 +54,7 @@ async fn main() -> anyhow::Result<()> {
 
     let user_service = Arc::new(application::user_service::UserService::new(user_repo.clone()));
     let game_service = Arc::new(application::game_service::GameService::new(game_repo.clone(), participant_repo.clone())); // Removed tx
-    let transaction_service = Arc::new(application::transaction_service::TransactionService::new(transaction_repo.clone(), participant_repo.clone(), tx.clone()));
+    let transaction_service = Arc::new(application::transaction_service::TransactionService::new(transaction_repo.clone(), participant_repo.clone(), card_repo.clone(), tx.clone()));
     let dice_service = Arc::new(application::dice_service::DiceService::new(dice_repo.clone(), tx.clone())); // Removed game_repo, participant_repo
     let roulette_service = Arc::new(application::roulette_service::RouletteService::new(roulette_repo.clone(), tx.clone())); // Removed transaction_repo, participant_repo
     let special_dice_service = Arc::new(application::special_dice_service::SpecialDiceService::new(special_dice_repo.clone(), tx.clone())); // Removed transaction_repo, participant_repo
@@ -117,6 +117,8 @@ async fn main() -> anyhow::Result<()> {
         .route("/games/:id/cards/inventory", axum::routing::get(web::handlers::card::get_inventory))
         .route("/games/:id/cards/use", axum::routing::post(web::handlers::card::use_card))
         .route("/games/:id/cards/inventory/:inventory_id", axum::routing::delete(web::handlers::card::discard_card))
+        .route("/games/:id/cards/all-inventories", axum::routing::get(web::handlers::card::get_all_inventories))
+        .route("/games/:id/cards/special-action", axum::routing::post(web::handlers::card::execute_special_action))
         .layer(tower_http::trace::TraceLayer::new_for_http())
         .layer(
             tower_http::cors::CorsLayer::new()

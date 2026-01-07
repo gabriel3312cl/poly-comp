@@ -217,34 +217,35 @@ impl CardRepository for PostgresCardRepository {
 
     // Seeding
     async fn ensure_cards_seeded(&self) -> Result<(), anyhow::Error> {
+        // Check Boveda (Total should be 20)
         let count_boveda: i64 = sqlx::query_scalar("SELECT count(*) FROM cards WHERE type = 'boveda'")
             .fetch_one(&self.pool)
             .await?;
         
-        if count_boveda < 10 {
+        if count_boveda < 20 {
             sqlx::query(
                 r#"
                 INSERT INTO cards (type, title, description, cost, color, action_type) VALUES
-                ('boveda', 'Constructor Privilegiado', 'Puedes construir casas en cualquier momento.', 250, 'yellow', 'keep'),
-                ('boveda', 'Títulos de Propiedad', 'Eres dueño de los títulos. Cobras tú en lugar del banco.', 375, 'yellow', 'keep'),
-                ('boveda', 'Tren de Victorias', 'Si posees 4 ferrocarriles, ganas.', 225, 'green', 'keep'),
-                ('boveda', 'Subasta Instantánea', 'Subasta la siguiente propiedad sin dueño.', 25, 'red', 'custom'),
-                ('boveda', 'Casa del Éxito', 'Ganas con: 1 ferrocarril, 1 esquina, 1 servicio, 1 impuesto.', 250, 'green', 'keep'),
-                ('boveda', 'El Banco', 'Eres dueño del banco. Usas dinero del banco para pagar.', 500, 'yellow', 'keep'),
-                ('boveda', 'Monopolio Instantáneo', 'Compra grupo completo.', 50, 'red', 'custom'),
-                ('boveda', 'Ladrón de Títulos', 'Roba título más barato a cada jugador.', 200, 'red', 'custom'),
-                ('boveda', 'La Bóveda', 'Eres dueño de la bóveda. Cobras tú las tarjetas de venta.', 500, 'yellow', 'keep'),
-                ('boveda', 'Todos los de 50', 'Toma todos los billetes de 50 de todos.', 300, 'red', 'custom'),
-                ('boveda', 'Número 7', 'Controlas el 7. Mueves a quien saque 7.', 300, 'yellow', 'keep'),
-                ('boveda', 'Propulsor', 'Avanza a cualquier casilla en vez de tirar.', 150, 'red', 'custom'),
-                ('boveda', 'Campeón Doble', 'Ganas con 2 grupos completos.', 300, 'green', 'keep'),
-                ('boveda', 'Dado de Compra', 'Eliges resultado del dado.', 275, 'yellow', 'keep'),
-                ('boveda', 'Victoria por Barrida', 'Ganas con 8 títulos.', 350, 'green', 'keep'),
-                ('boveda', 'Bienes Raíces Gratis', 'Coloca casa gratis.', 25, 'red', 'custom'),
-                ('boveda', 'Circuito Victoria', 'Ganas con Muelle + Hotel.', 325, 'green', 'keep'),
-                ('boveda', 'Dobles', 'Ganas con 3 dobles.', 50, 'green', 'keep'),
-                ('boveda', 'Todas las Construcciones', 'Dueño de casas/hoteles. Cobras por construir.', 100, 'yellow', 'keep'),
-                ('boveda', 'Salida Victoriosa', 'Ganas al caer en Salida.', 200, 'green', 'keep');
+                ('boveda', 'Tren de Victorias', 'Si posees 4 ferrocarriles, ganas.', 225.00, 'green', 'keep'),
+                ('boveda', 'Subasta Instantánea', 'Subasta la siguiente propiedad sin dueño.', 25.00, 'red', 'custom'),
+                ('boveda', 'Casa del Éxito', 'Ganas con: 1 ferrocarril, 1 esquina, 1 servicio, 1 impuesto.', 250.00, 'green', 'keep'),
+                ('boveda', 'Ladrón de Títulos', 'Roba título más barato a cada jugador.', 200.00, 'red', 'custom'),
+                ('boveda', 'Todos los de 50', 'Toma todos los billetes de 50 de todos.', 300.00, 'red', 'custom'),
+                ('boveda', 'Propulsor', 'Avanza a cualquier casilla en vez de tirar.', 150.00, 'red', 'custom'),
+                ('boveda', 'Dado de Compra', 'Eliges resultado del dado.', 275.00, 'yellow', 'keep'),
+                ('boveda', 'Victoria por Barrida', 'Ganas con 8 títulos.', 350.00, 'green', 'keep'),
+                ('boveda', 'Circuito Victoria', 'Ganas con Muelle + Hotel.', 325.00, 'green', 'keep'),
+                ('boveda', 'Salida Victoriosa', 'Ganas al caer en Salida.', 200.00, 'green', 'keep'),
+                ('boveda', 'Dobles', 'Ganas con 3 dobles seguidos.', 50.00, 'green', 'keep'),
+                ('boveda', 'Todas las Construcciones', 'Dueño de casas/hoteles. Cobras por construcciones/Construyes grátis.', 100.00, 'yellow', 'keep'),
+                ('boveda', 'Número 7', 'Controlas el 7. Mueves a quien saque 7. Incluído tu.', 300.00, 'yellow', 'keep'),
+                ('boveda', 'Bienes Raíces Gratis', 'Colocas una casa gratis. No tiene que formar parte de un grupo completo.', 25.00, 'red', 'custom'),
+                ('boveda', 'Monopolio Instantáneo', 'Compra grupo completo de propiedades. Si pertenece a otro jugador, págale el precio de compra.', 50.00, 'red', 'custom'),
+                ('boveda', 'Campeón Doble', 'Ganas con 2 grupos completos de propiedades.', 300.00, 'green', 'keep'),
+                ('boveda', 'La Bóveda', 'Eres dueño de la bóveda. Cobras tú las tarjetas de venta. Tu no pagas nada por comprar.', 500.00, 'yellow', 'keep'),
+                ('boveda', 'El Banco', 'Eres dueño del banco. Usas dinero del banco para pagar, Cuando cobres, coloca lo que recaudes en tu mazo personal de dinero.', 500.00, 'yellow', 'keep'),
+                ('boveda', 'Constructor Privilegiado', 'Puedes construir casas en cualquier momento. Incluso en propiedades que no forman parte de un grupo completo.', 250.00, 'yellow', 'keep'),
+                ('boveda', 'Títulos de Propiedad', 'Eres dueño de los títulos. Cobras tú en lugar del banco. Cuanto tu compres, no pagas nada.', 375.00, 'yellow', 'keep');
                 "#
             ).execute(&self.pool).await?;
         }
@@ -253,26 +254,26 @@ impl CardRepository for PostgresCardRepository {
         let count_arca: i64 = sqlx::query_scalar("SELECT count(*) FROM cards WHERE type = 'arca'")
             .fetch_one(&self.pool)
             .await?;
-        if count_arca < 5 {
+        if count_arca < 16 {
             sqlx::query(
                 r#"
                 INSERT INTO cards (type, title, description, action_type, action_value) VALUES
-                ('arca', 'Venta de acciones', 'Por venta de acciones, cobra 50', 'receive_bank', 50),
-                ('arca', 'Devolución de impuestos', 'Cobra 20', 'receive_bank', 20),
-                ('arca', 'Herencia misteriosa', 'Recibes una herencia misteriosa. Cobra 100', 'receive_bank', 100),
-                ('arca', 'Error bancario', 'Error bancario a tu favor. Cobra 200', 'receive_bank', 200),
-                ('arca', 'Gastos escolares', 'Paga 50', 'pay_bank', 50),
-                ('arca', 'Cumpleaños', 'Es tu cumpleaños. Cobra 10 a cada jugador', 'receive_all', 10),
-                ('arca', 'La Salida', 'Avanza hasta la salida. Cobra 200', 'move_to', 0),
-                ('arca', 'Seguro de vida', 'El seguro de vida te reporta beneficios. Cobra 100', 'receive_bank', 100),
-                ('arca', 'Consultoría', 'Honorarios de consultoria. Cobra 25', 'receive_bank', 25),
-                ('arca', 'Reparaciones', 'Debes hacer reparaciones viales. Paga por casas y hoteles.', 'repair', 0),
-                ('arca', 'Fondo vacacional', 'El fondo vacacional te reporta beneficios. Cobra 100', 'receive_bank', 100),
-                ('arca', 'Cárcel', 'Ve directamente a la cárcel', 'move_to', -1),
-                ('arca', 'Concurso de belleza', 'Has ganado el segundo premio. Cobra 10', 'receive_bank', 10),
-                ('arca', 'Adoptas un perrito', 'Paga 50', 'pay_bank', 50),
-                ('arca', 'Hospital', 'Facturas de hospital. Paga 100', 'pay_bank', 100),
-                ('arca', 'Sal de la Cárcel', 'Sal de la carcel gratis. Conservar.', 'keep', 0);
+                ('arca', 'Venta de acciones', 'Por venta de acciones, cobra 50', 'receive_bank', 50.00),
+                ('arca', 'Devolución de impuestos', 'Cobra 20', 'receive_bank', 20.00),
+                ('arca', 'Herencia misteriosa', 'Recibes una herencia misteriosa. Cobra 100', 'receive_bank', 100.00),
+                ('arca', 'Error bancario', 'Error bancario a tu favor. Cobra 200', 'receive_bank', 200.00),
+                ('arca', 'Gastos escolares', 'Paga 50', 'pay_bank', 50.00),
+                ('arca', 'Cumpleaños', 'Es tu cumpleaños. Cobra 10 a cada jugador', 'receive_all', 10.00),
+                ('arca', 'La Salida', 'Avanza hasta la salida. Cobra 200', 'move_to', 0.00),
+                ('arca', 'Seguro de vida', 'El seguro de vida te reporta beneficios. Cobra 100', 'receive_bank', 100.00),
+                ('arca', 'Consultoría', 'Honorarios de consultoria. Cobra 25', 'receive_bank', 25.00),
+                ('arca', 'Reparaciones', 'Debes hacer reparaciones viales. Paga por casas y hoteles.', 'repair', 0.00),
+                ('arca', 'Fondo vacacional', 'El fondo vacacional te reporta beneficios. Cobra 100', 'receive_bank', 100.00),
+                ('arca', 'Cárcel', 'Ve directamente a la cárcel. No pases por la salida.', 'move_to', -1.00),
+                ('arca', 'Concurso de belleza', 'Has ganado el segundo premio. Cobra 10', 'receive_bank', 10.00),
+                ('arca', 'Adoptas un perrito', 'Paga 50', 'pay_bank', 50.00),
+                ('arca', 'Hospital', 'Facturas de hospital. Paga 100', 'pay_bank', 100.00),
+                ('arca', 'Sal de la Cárcel', 'Sal de la carcel gratis. Conservar.', 'keep', 0.00);
                 "#
             ).execute(&self.pool).await?;
         }
@@ -281,25 +282,49 @@ impl CardRepository for PostgresCardRepository {
         let count_fortuna: i64 = sqlx::query_scalar("SELECT count(*) FROM cards WHERE type = 'fortuna'")
             .fetch_one(&self.pool)
             .await?;
-        if count_fortuna < 5 {
+        if count_fortuna < 15 {
             sqlx::query(
                 r#"
                 INSERT INTO cards (type, title, description, action_type, action_value) VALUES
-                ('fortuna', 'Ferrocarril', 'Avanza al siguiente ferrocarril.', 'move_to', 0),
-                ('fortuna', 'San Carlos', 'Avanza hasta la plaza San Carlos.', 'move_to', 0),
-                ('fortuna', 'Cárcel', 'Ve directamente a la cárcel.', 'move_to', -1),
-                ('fortuna', 'Muelle', 'Avanza hasta el muelle.', 'move_to', 0),
-                ('fortuna', 'Retrocede', 'Retrocede tres casillas.', 'move_to', -3),
-                ('fortuna', 'Reading', 'Viaja hasta el ferrocarril Reading.', 'move_to', 0),
-                ('fortuna', 'Dividendo', 'El banco te paga un dividendo de 50.', 'receive_bank', 50),
-                ('fortuna', 'Presidente', 'Elegido presidente. Paga a cada jugador 50.', 'pay_all', 50),
-                ('fortuna', 'Salida', 'Avanza hasta la salida.', 'move_to', 0),
-                ('fortuna', 'Préstamo', 'Por cumplimiento del préstamo, cobra 150.', 'receive_bank', 150),
-                ('fortuna', 'Servicio Público', 'Avanza al servicio público más cercano.', 'move_to', 0),
-                ('fortuna', 'Sal de la Cárcel', 'Sal de la carcel gratis.', 'keep', 0),
-                ('fortuna', 'Illinois', 'Avanza a la Avenida Illinois.', 'move_to', 0),
-                ('fortuna', 'Reparaciones', 'Reparaciones generales.', 'repair', 0),
-                ('fortuna', 'Multa', 'Multa por exceso de velocidad. Paga 15.', 'pay_bank', 15);
+                ('fortuna', 'Ferrocarril', 'Avanza al siguiente ferrocarril. Si tiene dueño paga doble.', 'move_to', 0.00),
+                ('fortuna', 'San Carlos', 'Avanza hasta la plaza San Carlos.', 'move_to', 0.00),
+                ('fortuna', 'Cárcel', 'Ve directamente a la cárcel.', 'move_to', -1.00),
+                ('fortuna', 'Muelle', 'Avanza hasta el muelle.', 'move_to', 0.00),
+                ('fortuna', 'Retrocede', 'Retrocede tres casillas.', 'move_to', -3.00),
+                ('fortuna', 'Reading', 'Viaja hasta el ferrocarril Reading.', 'move_to', 0.00),
+                ('fortuna', 'Dividendo', 'El banco te paga un dividendo de 50.', 'receive_bank', 50.00),
+                ('fortuna', 'Presidente', 'Elegido presidente. Paga a cada jugador 50.', 'pay_all', 50.00),
+                ('fortuna', 'Salida', 'Avanza hasta la salida.', 'move_to', 0.00),
+                ('fortuna', 'Préstamo', 'Por cumplimiento del préstamo, cobra 150.', 'receive_bank', 150.00),
+                ('fortuna', 'Servicio Público', 'Avanza al servicio público más cercano.', 'move_to', 0.00),
+                ('fortuna', 'Sal de la Cárcel', 'Sal de la carcel gratis.', 'keep', 0.00),
+                ('fortuna', 'Illinois', 'Avanza a la Avenida Illinois.', 'move_to', 0.00),
+                ('fortuna', 'Reparaciones', 'Reparaciones generales.', 'repair', 0.00),
+                ('fortuna', 'Multa', 'Multa por exceso de velocidad. Paga 15.', 'pay_bank', 15.00);
+                "#
+            ).execute(&self.pool).await?;
+        }
+        
+        // Bonificacion
+        let count_bonus: i64 = sqlx::query_scalar("SELECT count(*) FROM cards WHERE type = 'bonificacion'")
+            .fetch_one(&self.pool)
+            .await?;
+        if count_bonus < 12 {
+             sqlx::query(
+                r#"
+                INSERT INTO cards (type, title, description, action_type) VALUES
+                ('bonificacion', 'De nuevo', 'Vuelve a girar la ruleta', 'custom'),
+                ('bonificacion', 'Hazte más verde', 'Al caer en verde, mueve a otro verde', 'custom'),
+                ('bonificacion', 'Gran Premio', 'Cobra el gran premio de la parada libre', 'custom'),
+                ('bonificacion', 'Gira la ruleta', 'Gira sin gastar ficha', 'custom'),
+                ('bonificacion', 'Propiedad Gratis', 'Toma propiedad sin dueño gratis', 'custom'),
+                ('bonificacion', 'Reversa', 'Sustrae 1 de tu movimiento', 'custom'),
+                ('bonificacion', 'Luz verde', 'Si caes en rojo, mueve a verde adyacente', 'custom'),
+                ('bonificacion', 'Atajo', 'Mueve token a cualquier propiedad', 'custom'),
+                ('bonificacion', 'Casa Gratis', 'Construye casa gratis', 'custom'),
+                ('bonificacion', 'Mejora', 'Cambia token por Limusina (renta gratis)', 'custom'),
+                ('bonificacion', 'Intercambio', 'Intercambia propiedad por una sin dueño', 'custom'),
+                ('bonificacion', 'Compra dos', 'Compra propiedad y la siguiente tambien', 'custom');
                 "#
             ).execute(&self.pool).await?;
         }

@@ -30,4 +30,54 @@ api.interceptors.response.use(
     }
 );
 
+// --- Card Endpoints ---
+export const drawCard = async (gameId: string, cardType: string) => {
+    const response = await api.post(`/games/${gameId}/cards/draw`, { card_type: cardType });
+    return response.data;
+};
+
+export const getMarket = async (gameId: string) => {
+    const response = await api.get(`/games/${gameId}/cards/market`);
+    return response.data;
+};
+
+export const buyMarketCard = async (gameId: string, slotIndex: number) => {
+    const response = await api.post(`/games/${gameId}/cards/market/buy`, { slot_index: slotIndex });
+    return response.data;
+};
+
+export const exchangeMarketCard = async (gameId: string, slotIndex: number) => {
+    const response = await api.post(`/games/${gameId}/cards/market/exchange`, { slot_index: slotIndex });
+    return response.data;
+};
+
+export const getInventory = async (gameId: string) => {
+    const response = await api.get(`/games/${gameId}/cards/inventory`);
+    return response.data;
+};
+
+export const useCard = async (gameId: string, inventoryId: string) => {
+    const response = await api.post(`/games/${gameId}/cards/use`, { inventory_id: inventoryId });
+    return response.data;
+};
+
+export const discardCard = async (gameId: string, inventoryId: string) => {
+    const response = await api.delete(`/games/${gameId}/cards/inventory/${inventoryId}`);
+    return response.data;
+};
+
+export const getAllInventories = async (gameId: string) => {
+    const response = await api.get(`/games/${gameId}/cards/all-inventories`);
+    return response.data;
+};
+
+export const executeSpecialAction = async (gameId: string, action: string, targetInventoryId: string, myCardId?: string) => {
+    const response = await api.post(`/games/${gameId}/cards/special-action`, {
+        action,
+        target_inventory_id: targetInventoryId,
+        my_card_id: myCardId
+    });
+    return response.data;
+};
+
 export default api;

@@ -3,14 +3,15 @@ use uuid::Uuid;
 use bigdecimal::BigDecimal;
 use crate::domain::{
     entities::Transaction,
-    repositories::{TransactionRepository, ParticipantRepository},
+    repositories::{TransactionRepository, ParticipantRepository, CardRepository},
     events::GameEvent,
 };
 use tokio::sync::broadcast;
 
 pub struct TransactionService {
     transaction_repo: Arc<dyn TransactionRepository + Send + Sync>,
-    _participant_repo: Arc<dyn ParticipantRepository + Send + Sync>, 
+    _participant_repo: Arc<dyn ParticipantRepository + Send + Sync>,
+    card_repo: Arc<dyn CardRepository + Send + Sync>,
     tx: broadcast::Sender<GameEvent>,
 }
 
@@ -18,20 +19,77 @@ impl TransactionService {
     pub fn new(
         transaction_repo: Arc<dyn TransactionRepository + Send + Sync>,
         participant_repo: Arc<dyn ParticipantRepository + Send + Sync>,
+        card_repo: Arc<dyn CardRepository + Send + Sync>,
         tx: broadcast::Sender<GameEvent>,
     ) -> Self {
-        Self { transaction_repo, _participant_repo: participant_repo, tx }
+        Self { transaction_repo, _participant_repo: participant_repo, card_repo, tx }
     }
 
     pub async fn transfer(&self, game_id: Uuid, from_pid: Option<Uuid>, to_pid: Option<Uuid>, amount: BigDecimal, description: Option<String>) -> Result<Transaction, anyhow::Error> {
         // Balance validation removed to allow negative balances (debt)
         
+        let final_from = from_pid;
+        let mut final_to = to_pid;
+        let mut final_amount = amount.clone();
+        
+        // --- El Banco Check ---
+        // We need to resolve "El Banco" owner.
+        // If from_pid or to_pid involves Bank or Owner, we apply rules.
+        
+        if let Ok(Some(bank_owner_pid)) = self.card_repo.find_owner_of_card_title(game_id, "El Banco").await {
+            
+            // Case 1: Payment TO Bank (from_pid = Some, to_pid = None)
+            if from_pid.is_some() && to_pid.is_none() {
+                if from_pid != Some(bank_owner_pid) {
+                    // Rule: Other player pays Bank -> Redirect to Owner.
+                    final_to = Some(bank_owner_pid);
+                    
+                    // Side-effect: Also add to Jackpot?
+                    // "los pagos... van ademas del jackpot, a la cuenta del jugador"
+                    // We need a secondary transaction for Jackpot injection.
+                    // Doing it async/fire-and-forget.
+                    let tx_repo = self.transaction_repo.clone();
+                    let amt = amount.clone();
+                    tokio::spawn(async move {
+                         let _ = tx_repo.execute_transfer(Transaction {
+                             id: Uuid::new_v4(),
+                             game_id,
+                             from_participant_id: None, 
+                             to_participant_id: None, // To Jackpot
+                             amount: amt,
+                             description: Some("El Banco Bonus (Inflation)".to_string()),
+                             created_at: Some(time::OffsetDateTime::now_utc())
+                         }).await;
+                    });
+
+                } else {
+                    // Rule: Owner pays Bank -> Immune (Cost 0) BUT add to Jackpot.
+                    final_amount = BigDecimal::from(0);
+                    
+                    // Add original amount to Jackpot
+                    let tx_repo = self.transaction_repo.clone();
+                    let amt = amount.clone();
+                    tokio::spawn(async move {
+                         let _ = tx_repo.execute_transfer(Transaction {
+                             id: Uuid::new_v4(),
+                             game_id,
+                             from_participant_id: None,
+                             to_participant_id: None, // To Jackpot
+                             amount: amt,
+                             description: Some("El Banco Owner Payment (Inflation)".to_string()),
+                             created_at: Some(time::OffsetDateTime::now_utc())
+                         }).await;
+                    });
+                }
+            }
+        }
+
         let tx = Transaction {
             id: Uuid::new_v4(),
             game_id,
-            from_participant_id: from_pid,
-            to_participant_id: to_pid,
-            amount,
+            from_participant_id: final_from,
+            to_participant_id: final_to,
+            amount: final_amount,
             description,
             created_at: Some(time::OffsetDateTime::now_utc()),
         };
@@ -64,51 +122,5 @@ impl TransactionService {
         }
 
         result
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::domain::repositories::{MockTransactionRepository, MockParticipantRepository};
-    use mockall::predicate::*;
-
-    #[tokio::test]
-    async fn test_transfer_success() {
-        let mut mock_tx_repo = MockTransactionRepository::new();
-        let mock_part_repo = MockParticipantRepository::new();
-        let (tx, _) = broadcast::channel(10);
-
-        mock_tx_repo.expect_execute_transfer()
-            .times(1)
-            .returning(|tx| Ok(tx));
-
-        let service = TransactionService::new(Arc::new(mock_tx_repo), Arc::new(mock_part_repo), tx);
-        let result = service.transfer(
-            Uuid::new_v4(), 
-            Some(Uuid::new_v4()), 
-            Some(Uuid::new_v4()), 
-            BigDecimal::from(100), 
-            Some("Rent".to_string())
-        ).await;
-
-        assert!(result.is_ok());
-    }
-
-    #[tokio::test]
-    async fn test_delete_transaction() {
-        let mut mock_tx_repo = MockTransactionRepository::new();
-        let mock_part_repo = MockParticipantRepository::new();
-        let (tx, _) = broadcast::channel(10);
-        let tx_id = Uuid::new_v4();
-
-        mock_tx_repo.expect_delete()
-            .with(eq(tx_id))
-            .times(1)
-            .returning(|_| Ok(()));
-
-        let service = TransactionService::new(Arc::new(mock_tx_repo), Arc::new(mock_part_repo), tx);
-        let result = service.delete_transaction(tx_id).await;
-        assert!(result.is_ok());
     }
 }

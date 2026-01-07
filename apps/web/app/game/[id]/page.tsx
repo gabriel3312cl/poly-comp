@@ -54,7 +54,8 @@ import {
     MenuItem,
     FormControl,
     InputLabel,
-    DialogActions
+    DialogActions,
+    Alert // Added
 } from '@mui/material';
 import { useUpdateGame } from '@/hooks/useGame';
 import { useEffect } from 'react';
@@ -143,6 +144,7 @@ export default function GameSessionPage() {
     const [inventoryOpen, setInventoryOpen] = useState(false);
     const [decksOpen, setDecksOpen] = useState(false);
     const [marketOpen, setMarketOpen] = useState(false); // Market collapsible state
+    const [viewedResults, setViewedResults] = useState(false); // Game Over Modal tracking
 
     // Find info
     const me = participants.find(p => p.user_id === user?.id);
@@ -229,9 +231,41 @@ export default function GameSessionPage() {
             }
         });
     };
+    const handleQuickSalary = () => {
+        if (!game || !me) return;
+
+        transfer({
+            gameId: id,
+            amount: 200,
+            description: "Salary (GO)",
+            from_participant_id: null,
+            to_participant_id: me.id
+        }, {
+            onSuccess: () => {
+                const audio = new Audio('/cash.mp3');
+                audio.play().catch(e => console.error(e));
+            }
+        });
+    };
 
     return (
         <Container maxWidth="lg" sx={{ mt: 4, mb: 10 }}>
+            {/* Game Over Banner */}
+            {game?.status === 'FINISHED' && (
+                <Alert
+                    severity="error"
+                    variant="filled"
+                    sx={{ mb: 4, fontWeight: 'bold' }}
+                    action={
+                        <Button color="inherit" size="small" onClick={() => setViewedResults(false)}>
+                            Show Result Screen
+                        </Button>
+                    }
+                >
+                    GAME OVER - This session has ended.
+                </Alert>
+            )}
+
             {/* Header Info */}
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={4} flexWrap="wrap" gap={2}>
                 <Box>
@@ -296,6 +330,15 @@ export default function GameSessionPage() {
                                 sx={{ flexGrow: 1 }}
                             >
                                 Receive (Go, Salary)
+                            </Button>
+                            <Button
+                                variant="contained"
+                                color="info" // Distinct color
+                                startIcon={<AccountBalanceIcon />}
+                                onClick={handleQuickSalary}
+                                sx={{ flexGrow: 1 }}
+                            >
+                                Quick Salary ($200)
                             </Button>
                             <Button
                                 variant="contained"
@@ -484,6 +527,51 @@ export default function GameSessionPage() {
                     />
                 </Box>
             </Drawer>
+
+            {/* Game Over Dialog */}
+            <Dialog
+                open={game?.status === 'FINISHED' && !viewedResults}
+                fullScreen
+                PaperProps={{
+                    style: {
+                        backgroundColor: 'rgba(0,0,0,0.95)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                    }
+                }}
+            >
+                <Box textAlign="center" p={4}>
+                    <Typography variant="h1" color="error" fontWeight="900" sx={{ textShadow: '0 0 20px red' }}>
+                        GAME OVER
+                    </Typography>
+                    <Typography variant="h4" color="white" mt={2}>
+                        The game has ended!
+                    </Typography>
+                    <Typography variant="h6" color="gray" mt={4}>
+                        A victory condition was met.
+                    </Typography>
+
+                    <Stack direction="row" spacing={4} justifyContent="center" mt={8}>
+                        <Button
+                            variant="contained"
+                            size="large"
+                            color="warning"
+                            onClick={() => window.location.href = '/history'}
+                        >
+                            Return to Menu
+                        </Button>
+                        <Button
+                            variant="outlined"
+                            size="large"
+                            sx={{ color: 'white', borderColor: 'white' }}
+                            onClick={() => setViewedResults(true)}
+                        >
+                            View Board (Read-Only)
+                        </Button>
+                    </Stack>
+                </Box>
+            </Dialog>
         </Container >
     );
 }
