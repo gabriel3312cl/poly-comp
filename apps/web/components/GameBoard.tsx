@@ -33,8 +33,40 @@ export default function GameBoard({ participants, diceHistory = [] }: GameBoardP
     const myParticipant = participants.find(p => p.user_id === user?.id);
 
     // UI State
-    const [viewLayer, setViewLayer] = useState<'standard' | 'heatmap' | 'history'>('standard');
+    const [viewLayer, setViewLayer] = useState<'standard' | 'heatmap' | 'landings'>('standard');
     const [selectedSpaceIndex, setSelectedSpaceIndex] = useState<number | null>(null);
+
+    // Logic: Reconstruct Landing History
+    // We simulate the game from the beginning to find "hot spots"
+    const landingStats = (() => {
+        // Sort history: oldest first
+        const sortedHistory = [...diceHistory].sort((a, b) =>
+            new Date(a.roll.created_at).getTime() - new Date(b.roll.created_at).getTime()
+        );
+
+        const positions: Record<string, number> = {}; // userId -> currentPos
+        const counts: Record<number, number> = {}; // spaceIndex -> visitCount
+        let maxVisits = 1;
+
+        // Initialize positions at 0 (Go)
+        participants.forEach(p => positions[p.user_id] = 0);
+        // Also ensure historical users are tracked if they left? 
+        // For now, only track current participants or users in history.
+        // Better: Initialize for any user found in history.
+
+        sortedHistory.forEach(h => {
+            const uid = h.user_id;
+            // Default to 0 if new user
+            const current = positions[uid] !== undefined ? positions[uid] : 0;
+            const next = (current + h.roll.total) % 40;
+
+            positions[uid] = next;
+            counts[next] = (counts[next] || 0) + 1;
+            if (counts[next] > maxVisits) maxVisits = counts[next];
+        });
+
+        return { counts, maxVisits };
+    })();
 
     // Helpers
     const getStepsFromMe = (targetIndex: number) => {
@@ -49,28 +81,25 @@ export default function GameBoard({ participants, diceHistory = [] }: GameBoardP
         return (PROBABILITIES[steps] / 36) * 100;
     };
 
-    // Derived Data for Visualization
+    // Derived Data for Overlay
     const getSpaceColorOverlay = (index: number) => {
-        if (!myParticipant) return 'transparent';
-        const steps = getStepsFromMe(index);
-
+        // Layer 1: Next Roll Probability (Heatmap)
         if (viewLayer === 'heatmap') {
+            if (!myParticipant) return 'transparent';
+            const steps = getStepsFromMe(index);
             if (steps === null || steps < 2 || steps > 12) return 'transparent';
             const prob = getMathProb(steps);
             const opacity = (prob / 16.7) * 0.8;
             return `rgba(255, 0, 0, ${opacity})`;
         }
 
-        if (viewLayer === 'history') {
-            if (steps === null) return 'transparent';
-            if (steps < 2 || steps > 12) return 'transparent';
-
-            const myRolls = diceHistory.filter(h => h.user_id === user?.id);
-            const matching = myRolls.filter(h => h.roll.total === steps).length;
-            const total = myRolls.length || 1;
-            const freq = matching / total;
-            const intensity = Math.min((freq / 0.16) * 0.6, 0.9);
-            return `rgba(0, 0, 255, ${intensity})`;
+        // Layer 2: Landing Frequency (Global History)
+        if (viewLayer === 'landings') {
+            const count = landingStats.counts[index] || 0;
+            if (count === 0) return 'transparent';
+            // Intensity relative to max visits
+            const intensity = Math.min((count / landingStats.maxVisits) * 0.6 + 0.1, 0.8);
+            return `rgba(147, 51, 234, ${intensity})`; // Purple for landing history
         }
 
         return 'transparent';
@@ -100,10 +129,10 @@ export default function GameBoard({ participants, diceHistory = [] }: GameBoardP
         const reachable = steps !== null && steps >= 2 && steps <= 12;
         const mathProb = steps !== null ? getMathProb(steps) : 0;
 
-        const myRolls = diceHistory.filter(h => h.user_id === user?.id);
-        const totalRolls = myRolls.length;
-        const matchingRolls = reachable ? myRolls.filter(h => h.roll.total === steps).length : 0;
-        const histProb = totalRolls > 0 ? (matchingRolls / totalRolls) * 100 : 0;
+        // Stats
+        const visits = landingStats.counts[selectedSpaceIndex] || 0;
+        const maxVisits = landingStats.maxVisits;
+        const visitIntensity = maxVisits > 0 ? (visits / maxVisits) * 100 : 0;
 
         return (
             <Box p={3}>
@@ -138,24 +167,23 @@ export default function GameBoard({ participants, diceHistory = [] }: GameBoardP
                                         {!reachable && <Typography variant="caption" color="error">Unreachable (Next Turn)</Typography>}
                                     </Grid>
 
-                                    {reachable && (
-                                        <>
-                                            <Grid item xs={12} md={4}>
-                                                <Typography variant="caption" color="text.secondary">Math Probability</Typography>
-                                                <Typography variant="h6" color="info.main">{mathProb.toFixed(1)}%</Typography>
-                                                <Box sx={{ width: '100%', height: 4, bgcolor: 'rgba(255,255,255,0.1)', mt: 0.5, borderRadius: 1 }}>
-                                                    <Box sx={{ width: `${Math.min(mathProb * 2, 100)}%`, height: '100%', bgcolor: 'info.main', borderRadius: 1 }} />
-                                                </Box>
-                                            </Grid>
-                                            <Grid item xs={12} md={4}>
-                                                <Typography variant="caption" color="text.secondary">Your History ({matchingRolls}/{totalRolls})</Typography>
-                                                <Typography variant="h6" color={histProb > mathProb ? 'success.main' : 'warning.main'}>{histProb.toFixed(1)}%</Typography>
-                                                <Box sx={{ width: '100%', height: 4, bgcolor: 'rgba(255,255,255,0.1)', mt: 0.5, borderRadius: 1 }}>
-                                                    <Box sx={{ width: `${Math.min(histProb * 2, 100)}%`, height: '100%', bgcolor: histProb > mathProb ? 'success.main' : 'warning.main', borderRadius: 1 }} />
-                                                </Box>
-                                            </Grid>
-                                        </>
-                                    )}
+                                    <Grid item xs={12} md={4}>
+                                        <Typography variant="caption" color="text.secondary">Math Probability</Typography>
+                                        <Typography variant="h6" color="info.main">{mathProb.toFixed(1)}%</Typography>
+                                        {reachable && (
+                                            <Box sx={{ width: '100%', height: 4, bgcolor: 'rgba(255,255,255,0.1)', mt: 0.5, borderRadius: 1 }}>
+                                                <Box sx={{ width: `${Math.min(mathProb * 2, 100)}%`, height: '100%', bgcolor: 'info.main', borderRadius: 1 }} />
+                                            </Box>
+                                        )}
+                                    </Grid>
+
+                                    <Grid item xs={12} md={4}>
+                                        <Typography variant="caption" color="text.secondary">Global Visits</Typography>
+                                        <Typography variant="h6" color="secondary.main">{visits} times</Typography>
+                                        <Box sx={{ width: '100%', height: 4, bgcolor: 'rgba(255,255,255,0.1)', mt: 0.5, borderRadius: 1 }}>
+                                            <Box sx={{ width: `${visitIntensity}%`, height: '100%', bgcolor: 'secondary.main', borderRadius: 1 }} />
+                                        </Box>
+                                    </Grid>
                                 </Grid>
                             </CardContent>
                         </Card>
@@ -185,8 +213,8 @@ export default function GameBoard({ participants, diceHistory = [] }: GameBoardP
                         <ToggleButton value="heatmap">
                             <WhatshotIcon fontSize="small" sx={{ mr: 1, color: 'error.main' }} /> Next Roll Prob
                         </ToggleButton>
-                        <ToggleButton value="history">
-                            <AssessmentIcon fontSize="small" sx={{ mr: 1, color: 'primary.main' }} /> My History
+                        <ToggleButton value="landings">
+                            <AssessmentIcon fontSize="small" sx={{ mr: 1, color: 'secondary.main' }} /> Landing Heatmap
                         </ToggleButton>
                     </ToggleButtonGroup>
                 </Box>
@@ -232,6 +260,8 @@ export default function GameBoard({ participants, diceHistory = [] }: GameBoardP
                                         ...pos,
                                         bgcolor: 'white',
                                         border: isSelected ? '3px solid #FFD700' : '1px solid black',
+                                        //@ts-ignore
+                                        borderColor: isSelected ? '#FFD700' : 'rgba(0,0,0,0.12)',
                                         position: 'relative',
                                         display: 'flex',
                                         flexDirection: 'column',
@@ -258,8 +288,22 @@ export default function GameBoard({ participants, diceHistory = [] }: GameBoardP
 
                                     {occupants.length > 0 && (
                                         <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', position: 'absolute', bottom: 1, width: '100%', zIndex: 7 }}>
-                                            {occupants.map(p => (
-                                                <Avatar key={p.id} src={p.avatar_url} sx={{ width: 16, height: 16, border: '1px solid white' }}>{p.first_name[0]}</Avatar>
+                                            {occupants.map((p, i) => (
+                                                <Avatar
+                                                    key={p.id}
+                                                    src={p.avatar_url}
+                                                    sx={{
+                                                        width: 28,
+                                                        height: 28,
+                                                        border: '2px solid white',
+                                                        fontSize: '0.8rem',
+                                                        ml: i > 0 ? -1.5 : 0,
+                                                        bgcolor: p.user_id === user?.id ? 'primary.main' : 'secondary.main',
+                                                        boxShadow: 3
+                                                    }}
+                                                >
+                                                    {p.first_name[0]}
+                                                </Avatar>
                                             ))}
                                         </Box>
                                     )}
