@@ -37,6 +37,7 @@ import BovedaMarket from '@/components/BovedaMarket';
 import { parseServerDate } from '@/utils/formatters';
 import { useAuthStore } from '@/store/authStore';
 import DiceSection, { DiceSectionHandle } from '@/components/DiceSection';
+import GameBoard from '@/components/GameBoard';
 // import SpecialDiceTool from '@/components/SpecialDiceTool';
 import FloatingTools from '@/components/FloatingTools';
 import SettingsIcon from '@mui/icons-material/Settings';
@@ -47,6 +48,7 @@ import StopIcon from '@mui/icons-material/Stop';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import CardDrawer from '@/components/CardDrawer';
+import MapIcon from '@mui/icons-material/Map';
 import {
     Dialog,
     DialogTitle,
@@ -172,6 +174,7 @@ export default function GameSessionPage() {
     const [inventoryOpen, setInventoryOpen] = useState(false);
     const [decksOpen, setDecksOpen] = useState(false);
     const [marketOpen, setMarketOpen] = useState(false); // Market collapsible state
+    const [boardOpen, setBoardOpen] = useState(true); // Board collapsible state
     const [viewedResults, setViewedResults] = useState(false); // Game Over Modal tracking
 
     // Find info
@@ -384,6 +387,31 @@ export default function GameSessionPage() {
                                 Pay (Tax, Fines)
                             </Button>
                         </Stack>
+                    </Box>
+
+                    {/* Game Board (Visual) */}
+                    <Box mt={4} mb={4} bgcolor="rgba(255,255,255,0.05)" borderRadius={4} border="1px dashed #555" overflow="hidden">
+                        <Box
+                            p={3}
+                            display="flex"
+                            alignItems="center"
+                            justifyContent="space-between"
+                            onClick={() => setBoardOpen(!boardOpen)}
+                            sx={{ cursor: 'pointer', '&:hover': { bgcolor: 'rgba(255,255,255,0.05)' } }}
+                        >
+                            <Stack direction="row" alignItems="center" spacing={1}>
+                                <MapIcon color="secondary" />
+                                <Typography variant="h6" fontWeight="bold" color="secondary.main">
+                                    Interactive Board
+                                </Typography>
+                            </Stack>
+                            {boardOpen ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                        </Box>
+                        <Collapse in={boardOpen}>
+                            <Box p={3} pt={0}>
+                                <GameBoard participants={participants} />
+                            </Box>
+                        </Collapse>
                     </Box>
 
                     {/* Dice Roller */}
