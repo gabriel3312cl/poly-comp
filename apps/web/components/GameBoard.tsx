@@ -55,30 +55,22 @@ export default function GameBoard({ participants, diceHistory = [] }: GameBoardP
         const steps = getStepsFromMe(index);
 
         if (viewLayer === 'heatmap') {
-            // Heatmap: Probability of landing here NEXT TURN (Math)
             if (steps === null || steps < 2 || steps > 12) return 'transparent';
             const prob = getMathProb(steps);
-            // Opacity based on probability (Max ~16.7%)
             const opacity = (prob / 16.7) * 0.8;
-            // Color scale: Green (High) -> Red (Low)? Or just Heat (Red=High)?
-            // Usually Heatmap: Red = High freq.
             return `rgba(255, 0, 0, ${opacity})`;
         }
 
         if (viewLayer === 'history') {
-            // History: Freq of rolling this number
             if (steps === null) return 'transparent';
-            // Only count reachable 2-12 for dice heatmap? Or any distance?
-            // Dice history is strictly Roll Total. So only 2-12 matters.
             if (steps < 2 || steps > 12) return 'transparent';
 
             const myRolls = diceHistory.filter(h => h.user_id === user?.id);
             const matching = myRolls.filter(h => h.roll.total === steps).length;
             const total = myRolls.length || 1;
             const freq = matching / total;
-            // Normalize: Max expected is ~0.16. If > 0.16, super hot.
             const intensity = Math.min((freq / 0.16) * 0.6, 0.9);
-            return `rgba(0, 0, 255, ${intensity})`; // Blue for history
+            return `rgba(0, 0, 255, ${intensity})`;
         }
 
         return 'transparent';
@@ -96,9 +88,9 @@ export default function GameBoard({ participants, diceHistory = [] }: GameBoardP
     const renderSidePanel = () => {
         if (selectedSpaceIndex === null) {
             return (
-                <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" height="100%" p={2} textAlign="center" color="text.secondary">
-                    <MapIcon sx={{ fontSize: 40, mb: 2, opacity: 0.5 }} />
-                    <Typography>Select a space on the board to view detailed statistics and intelligence.</Typography>
+                <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" height="100%" p={3} textAlign="center" color="text.secondary">
+                    <MapIcon sx={{ fontSize: 30, mb: 1, opacity: 0.5 }} />
+                    <Typography variant="body2">Select a space on the board to view detailed statistics.</Typography>
                 </Box>
             );
         }
@@ -108,89 +100,75 @@ export default function GameBoard({ participants, diceHistory = [] }: GameBoardP
         const reachable = steps !== null && steps >= 2 && steps <= 12;
         const mathProb = steps !== null ? getMathProb(steps) : 0;
 
-        // History Stats
         const myRolls = diceHistory.filter(h => h.user_id === user?.id);
         const totalRolls = myRolls.length;
         const matchingRolls = reachable ? myRolls.filter(h => h.roll.total === steps).length : 0;
         const histProb = totalRolls > 0 ? (matchingRolls / totalRolls) * 100 : 0;
 
         return (
-            <Box p={2} height="100%" overflow="auto">
+            <Box p={3}>
                 <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-                    <Typography variant="h6" fontWeight="bold">{space.name}</Typography>
+                    <Box display="flex" alignItems="center" gap={2}>
+                        {space.color && <Box sx={{ width: 20, height: 20, bgcolor: space.color, borderRadius: 1 }} />}
+                        <Typography variant="h6" fontWeight="bold">{space.name}</Typography>
+                        <Typography variant="body2" color="text.secondary">({space.type})</Typography>
+                    </Box>
                     <IconButton size="small" onClick={() => setSelectedSpaceIndex(null)}><CloseIcon /></IconButton>
                 </Box>
 
-                <Divider sx={{ mb: 2 }} />
-
-                {/* Space Details */}
-                <Grid container spacing={2} mb={3}>
-                    <Grid item xs={6}>
-                        <Typography variant="caption" color="text.secondary">Type</Typography>
-                        <Typography variant="body2" sx={{ textTransform: 'capitalize' }}>{space.type}</Typography>
+                <Grid container spacing={3}>
+                    {/* Basic Info */}
+                    <Grid item xs={12} md={3}>
+                        <Card variant="outlined" sx={{ height: '100%', bgcolor: 'rgba(255,255,255,0.02)' }}>
+                            <CardContent sx={{ p: 2, '&:last-child': { p: 2 } }}>
+                                <Typography variant="caption" color="text.secondary">Price / Value</Typography>
+                                <Typography variant="h5" fontWeight="bold" color="success.light">{space.price ? `$${space.price}` : 'N/A'}</Typography>
+                            </CardContent>
+                        </Card>
                     </Grid>
-                    <Grid item xs={6}>
-                        <Typography variant="caption" color="text.secondary">Price</Typography>
-                        <Typography variant="body2" fontWeight="bold">{space.price ? `$${space.price}` : '-'}</Typography>
+
+                    {/* Intelligence */}
+                    <Grid item xs={12} md={9}>
+                        <Card variant="outlined" sx={{ bgcolor: 'rgba(255,255,255,0.05)' }}>
+                            <CardContent sx={{ p: 2, '&:last-child': { p: 2 } }}>
+                                <Grid container spacing={2} alignItems="center">
+                                    <Grid item xs={12} md={4}>
+                                        <Typography variant="caption" color="text.secondary">Distance</Typography>
+                                        <Typography variant="h6">{steps} steps</Typography>
+                                        {!reachable && <Typography variant="caption" color="error">Unreachable (Next Turn)</Typography>}
+                                    </Grid>
+
+                                    {reachable && (
+                                        <>
+                                            <Grid item xs={12} md={4}>
+                                                <Typography variant="caption" color="text.secondary">Math Probability</Typography>
+                                                <Typography variant="h6" color="info.main">{mathProb.toFixed(1)}%</Typography>
+                                                <Box sx={{ width: '100%', height: 4, bgcolor: 'rgba(255,255,255,0.1)', mt: 0.5, borderRadius: 1 }}>
+                                                    <Box sx={{ width: `${Math.min(mathProb * 2, 100)}%`, height: '100%', bgcolor: 'info.main', borderRadius: 1 }} />
+                                                </Box>
+                                            </Grid>
+                                            <Grid item xs={12} md={4}>
+                                                <Typography variant="caption" color="text.secondary">Your History ({matchingRolls}/{totalRolls})</Typography>
+                                                <Typography variant="h6" color={histProb > mathProb ? 'success.main' : 'warning.main'}>{histProb.toFixed(1)}%</Typography>
+                                                <Box sx={{ width: '100%', height: 4, bgcolor: 'rgba(255,255,255,0.1)', mt: 0.5, borderRadius: 1 }}>
+                                                    <Box sx={{ width: `${Math.min(histProb * 2, 100)}%`, height: '100%', bgcolor: histProb > mathProb ? 'success.main' : 'warning.main', borderRadius: 1 }} />
+                                                </Box>
+                                            </Grid>
+                                        </>
+                                    )}
+                                </Grid>
+                            </CardContent>
+                        </Card>
                     </Grid>
                 </Grid>
-
-                {/* Intelligence Section */}
-                <Card variant="outlined" sx={{ bgcolor: 'rgba(255,255,255,0.05)' }}>
-                    <CardContent>
-                        <Typography variant="subtitle2" gutterBottom display="flex" alignItems="center" gap={1}>
-                            <AssessmentIcon fontSize="small" color="primary" /> Intelligence
-                        </Typography>
-
-                        {myParticipant && (
-                            <>
-                                <Box mb={2}>
-                                    <Box display="flex" justifyContent="space-between">
-                                        <Typography variant="body2">Distance</Typography>
-                                        <Typography variant="body2" fontWeight="bold">{steps} steps</Typography>
-                                    </Box>
-                                    {!reachable && (
-                                        <Typography variant="caption" color="error">Cannot reach in next turn</Typography>
-                                    )}
-                                </Box>
-
-                                {reachable && (
-                                    <>
-                                        <Box mb={2}>
-                                            <Box display="flex" justifyContent="space-between">
-                                                <Typography variant="body2">Math Probability</Typography>
-                                                <Typography variant="body2" fontWeight="bold" color="info.main">{mathProb.toFixed(1)}%</Typography>
-                                            </Box>
-                                            <Box sx={{ width: '100%', height: 4, bgcolor: 'rgba(255,255,255,0.1)', mt: 0.5, borderRadius: 1 }}>
-                                                <Box sx={{ width: `${mathProb}%`, height: '100%', bgcolor: 'info.main', borderRadius: 1 }} />
-                                            </Box>
-                                        </Box>
-
-                                        <Box>
-                                            <Box display="flex" justifyContent="space-between">
-                                                <Typography variant="body2">Your History</Typography>
-                                                <Typography variant="body2" fontWeight="bold" color={histProb > mathProb ? 'success.main' : 'warning.main'}>
-                                                    {histProb.toFixed(1)}%
-                                                </Typography>
-                                            </Box>
-                                            <Typography variant="caption" color="text.secondary">
-                                                You rolled a {steps} in {matchingRolls} of your {totalRolls} turns.
-                                            </Typography>
-                                        </Box>
-                                    </>
-                                )}
-                            </>
-                        )}
-                    </CardContent>
-                </Card>
             </Box>
         );
     };
 
     return (
-        <Box display="flex" flexDirection={{ xs: 'column', md: 'row' }} gap={2} alignItems="start">
-            {/* Left: Visualization Controls & Board */}
-            <Box flexGrow={1} width="100%">
+        <Box display="flex" flexDirection="column" gap={3} alignItems="center">
+            {/* Top: Controls & Board */}
+            <Box width="100%" maxWidth={800}>
                 {/* Layer Controls */}
                 <Box mb={2} display="flex" justifyContent="center">
                     <ToggleButtonGroup
@@ -199,7 +177,7 @@ export default function GameBoard({ participants, diceHistory = [] }: GameBoardP
                         onChange={(e, v) => v && setViewLayer(v)}
                         size="small"
                         aria-label="map layers"
-                        sx={{ bgcolor: 'background.paper' }}
+                        sx={{ bgcolor: 'background.paper', borderRadius: 2, boxShadow: 1 }}
                     >
                         <ToggleButton value="standard">
                             <MapIcon fontSize="small" sx={{ mr: 1 }} /> Standard
@@ -224,7 +202,7 @@ export default function GameBoard({ participants, diceHistory = [] }: GameBoardP
                         position: 'relative',
                         aspectRatio: '1/1',
                         width: '100%',
-                        maxWidth: 600,
+                        maxWidth: 800,
                         mx: 'auto'
                     }}
                 >
@@ -258,34 +236,30 @@ export default function GameBoard({ participants, diceHistory = [] }: GameBoardP
                                         display: 'flex',
                                         flexDirection: 'column',
                                         alignItems: 'center',
-                                        justifyContent: 'space-between', // Maintain spacing
-                                        p: 0.2, // Reduced padding to fit text
+                                        justifyContent: 'space-between',
+                                        p: 0.2,
                                         cursor: 'pointer',
                                         transition: 'all 0.2s',
                                         '&:hover': { zIndex: 10, boxShadow: 6, transform: 'scale(1.1)' }
                                     }}
                                 >
-                                    {/* Intelligence Overlay */}
                                     <Box sx={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', bgcolor: overlayColor, zIndex: 5, pointerEvents: 'none' }} />
 
-                                    {/* Header Color */}
                                     {space.color && <Box sx={{ width: '100%', height: space.type === 'corner' ? 0 : '18%', bgcolor: space.color, borderBottom: '1px solid black' }} />}
 
-                                    {/* Content */}
                                     <Box zIndex={6} display="flex" flexDirection="column" alignItems="center" justifyContent="center" width="100%" height="100%" sx={{ pointerEvents: 'none' }}>
-                                        <Typography sx={{ fontSize: '0.45rem', fontWeight: 'bold', color: 'black', textAlign: 'center', lineHeight: 1, width: '100%', wordBreak: 'break-all' }}>
+                                        <Typography sx={{ fontSize: '0.6rem', fontWeight: 'bold', color: 'black', textAlign: 'center', lineHeight: 1, width: '100%', wordBreak: 'break-all' }}>
                                             {space.name}
                                         </Typography>
-                                        {space.price && <Typography sx={{ fontSize: '0.55rem', color: 'black', mt: 0.5 }}>${space.price}</Typography>}
+                                        {space.price && <Typography sx={{ fontSize: '0.65rem', color: 'black', mt: 0.5 }}>${space.price}</Typography>}
                                         {space.type === 'chance' && <Typography variant="caption" color="warning.main" fontWeight="bold">?</Typography>}
                                         {space.type === 'chest' && <Typography variant="caption" color="info.main" fontWeight="bold">📦</Typography>}
                                     </Box>
 
-                                    {/* Avatars */}
                                     {occupants.length > 0 && (
                                         <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', position: 'absolute', bottom: 1, width: '100%', zIndex: 7 }}>
                                             {occupants.map(p => (
-                                                <Avatar key={p.id} src={p.avatar_url} sx={{ width: 14, height: 14, border: '1px solid white' }}>{p.first_name[0]}</Avatar>
+                                                <Avatar key={p.id} src={p.avatar_url} sx={{ width: 16, height: 16, border: '1px solid white' }}>{p.first_name[0]}</Avatar>
                                             ))}
                                         </Box>
                                     )}
@@ -296,8 +270,8 @@ export default function GameBoard({ participants, diceHistory = [] }: GameBoardP
                 </Paper>
             </Box>
 
-            {/* Right: Intelligence Sidebar */}
-            <Paper elevation={3} sx={{ width: { xs: '100%', md: 300 }, height: { xs: 'auto', md: 600 }, flexShrink: 0, bgcolor: 'background.paper', borderRadius: 4, overflow: 'hidden' }}>
+            {/* Bottom: Intelligence Panel */}
+            <Paper elevation={3} sx={{ width: '100%', maxWidth: 800, minHeight: 150, bgcolor: 'background.paper', borderRadius: 4, overflow: 'hidden' }}>
                 {renderSidePanel()}
             </Paper>
         </Box>
