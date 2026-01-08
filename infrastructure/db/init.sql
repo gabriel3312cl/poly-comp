@@ -47,6 +47,8 @@ CREATE TABLE game_sessions (
     name VARCHAR(100) NOT NULL DEFAULT 'Monopoly Game',
     status VARCHAR(20) NOT NULL DEFAULT 'WAITING',
     jackpot_balance DECIMAL(15, 2) NOT NULL DEFAULT 0.00,
+    current_turn_user_id UUID REFERENCES users(id),
+    turn_order JSONB,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     ended_at TIMESTAMP WITH TIME ZONE
 );
@@ -272,3 +274,120 @@ INSERT INTO cards (type, title, description, cost, color, action_type) VALUES
 ('boveda', 'Dobles', 'Ganas con 3 dobles.', 50, 'green', 'keep'),
 ('boveda', 'Todas las Construcciones', 'Dueño de casas/hoteles. Cobras por construir.', 100, 'yellow', 'keep'),
 ('boveda', 'Salida Victoriosa', 'Ganas al caer en Salida.', 200, 'green', 'keep');
+
+-- ==========================================
+-- NEW GAME MECHANICS (PROPERTIES, AUCTIONS, TRADES)
+-- ==========================================
+
+-- Properties Catalog (Static Data)
+CREATE TABLE properties (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(100) NOT NULL,
+    group_color VARCHAR(20) NOT NULL, -- e.g. 'red', 'blue', 'railroad', 'utility'
+    price DECIMAL(15, 2) NOT NULL,
+    rent_base DECIMAL(15, 2) NOT NULL,
+    rent_house_1 DECIMAL(15, 2),
+    rent_house_2 DECIMAL(15, 2),
+    rent_house_3 DECIMAL(15, 2),
+    rent_house_4 DECIMAL(15, 2),
+    rent_hotel DECIMAL(15, 2),
+    mortgage_value DECIMAL(15, 2) NOT NULL,
+    unmortgage_cost DECIMAL(15, 2) NOT NULL,
+    house_cost DECIMAL(15, 2),
+    hotel_cost DECIMAL(15, 2),
+    board_position INT -- Index on the board (0-39) to link with UI
+);
+
+-- Property Ownership (Dynamic per Game)
+CREATE TABLE participant_properties (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    game_id UUID NOT NULL REFERENCES game_sessions(id) ON DELETE CASCADE,
+    participant_id UUID NOT NULL REFERENCES game_participants(id) ON DELETE CASCADE,
+    property_id UUID NOT NULL REFERENCES properties(id),
+    is_mortgaged BOOLEAN DEFAULT FALSE,
+    house_count INT DEFAULT 0, -- 0-4
+    hotel_count INT DEFAULT 0, -- 0-1
+    UNIQUE(game_id, property_id) -- A property can only be owned by one person in a game
+);
+
+-- Auctions
+CREATE TABLE auctions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    game_id UUID NOT NULL REFERENCES game_sessions(id) ON DELETE CASCADE,
+    property_id UUID NOT NULL REFERENCES properties(id),
+    current_bid DECIMAL(15, 2) DEFAULT 0,
+    highest_bidder_id UUID REFERENCES game_participants(id),
+    status VARCHAR(20) DEFAULT 'ACTIVE', -- ACTIVE, FINISHED, CANCELLED
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    ends_at TIMESTAMPTZ
+);
+
+-- Trades
+CREATE TABLE trades (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    game_id UUID NOT NULL REFERENCES game_sessions(id) ON DELETE CASCADE,
+    initiator_id UUID NOT NULL REFERENCES game_participants(id),
+    target_id UUID NOT NULL REFERENCES game_participants(id),
+    offer_cash DECIMAL(15, 2) DEFAULT 0,
+    offer_properties JSONB, -- List of property_ids
+    offer_cards JSONB,      -- List of participant_card_ids
+    request_cash DECIMAL(15, 2) DEFAULT 0,
+    request_properties JSONB,
+    request_cards JSONB,
+    status VARCHAR(20) DEFAULT 'PENDING', -- PENDING, ACCEPTED, REJECTED, CANCELLED
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- SEED PROPERTIES
+-- Based on provided text file "titulos de propiedad.txt"
+-- Note: Prices are derived as Mortgage * 2 if not explicitly standard.
+-- Groups: brown, light_blue, pink, orange, red, yellow, green, dark_blue, railroad, utility
+
+INSERT INTO properties (name, group_color, price, rent_base, rent_house_1, rent_house_2, rent_house_3, rent_house_4, rent_hotel, mortgage_value, unmortgage_cost, house_cost, hotel_cost, board_position) VALUES
+-- Brown
+('Avenida Mediterráneo', 'brown', 60, 2, 10, 30, 90, 160, 250, 30, 33, 50, 50, 1),
+('Avenida Báltica', 'brown', 60, 4, 20, 60, 180, 320, 450, 30, 33, 50, 50, 3),
+
+-- Light Blue
+('Avenida Oriental', 'light_blue', 100, 6, 30, 90, 270, 400, 550, 50, 55, 50, 50, 6),
+('Avenida Vermont', 'light_blue', 100, 6, 30, 90, 270, 400, 550, 50, 55, 50, 50, 8),
+('Avenida Connecticut', 'light_blue', 120, 8, 40, 100, 300, 450, 600, 60, 66, 50, 50, 9),
+
+-- Pink
+('Plaza San Carlos', 'pink', 140, 10, 50, 150, 450, 625, 750, 70, 77, 100, 100, 11),
+('Avenida Estados', 'pink', 140, 10, 50, 150, 450, 625, 750, 70, 77, 100, 100, 13),
+('Avenida Virginia', 'pink', 160, 12, 60, 180, 500, 700, 900, 80, 88, 100, 100, 14),
+
+-- Orange
+('Plaza St. James', 'orange', 180, 14, 70, 200, 550, 750, 950, 90, 99, 100, 100, 16),
+('Avenida Tennessee', 'orange', 180, 14, 70, 200, 550, 750, 950, 90, 99, 100, 100, 18),
+('Avenida Nueva York', 'orange', 200, 16, 80, 220, 600, 800, 1000, 100, 110, 100, 100, 19),
+
+-- Red
+('Avenida Kentucky', 'red', 220, 18, 90, 250, 700, 875, 1050, 110, 121, 150, 150, 21),
+('Avenida Indiana', 'red', 220, 18, 90, 250, 700, 875, 1050, 110, 121, 150, 150, 23),
+('Avenida Illinois', 'red', 240, 20, 100, 300, 750, 925, 1100, 120, 132, 150, 150, 24),
+
+-- Yellow
+('Avenida Atlántico', 'yellow', 260, 22, 110, 330, 800, 975, 1150, 130, 143, 150, 150, 26),
+('Avenida Ventnor', 'yellow', 260, 22, 110, 330, 800, 975, 1150, 130, 143, 150, 150, 27),
+('Jardines Marvin', 'yellow', 280, 24, 120, 360, 850, 1025, 1200, 140, 154, 150, 150, 29),
+
+-- Green
+('Avenida Pacífico', 'green', 300, 26, 130, 390, 900, 1100, 1275, 150, 165, 200, 200, 31),
+('Avenida Carolina del Norte', 'green', 300, 26, 130, 390, 900, 1100, 1275, 150, 165, 200, 200, 32),
+('Avenida Pennsylvania', 'green', 320, 28, 150, 450, 1000, 1200, 1400, 160, 176, 200, 200, 34),
+
+-- Dark Blue
+('Plaza Park', 'dark_blue', 350, 35, 175, 500, 1100, 1300, 1500, 175, 193, 200, 200, 37),
+('El Muelle', 'dark_blue', 400, 50, 200, 600, 1400, 1700, 2000, 200, 200, 200, 200, 39),
+
+-- Railroads (Rent is multiplier based on count, handled in code)
+('Ferrocarril Reading', 'railroad', 200, 25, 0, 0, 0, 0, 0, 100, 110, 0, 0, 5),
+('Ferrocarril Pennsylvania', 'railroad', 200, 25, 0, 0, 0, 0, 0, 100, 110, 0, 0, 15),
+('Ferrocarril B. & O.', 'railroad', 200, 25, 0, 0, 0, 0, 0, 100, 110, 0, 0, 25),
+('Ferrocarril Vía Rápida', 'railroad', 200, 25, 0, 0, 0, 0, 0, 100, 110, 0, 0, 35),
+
+-- Utilities (Rent is multiplier based on dice, handled in code)
+('Compañía de Electricidad', 'utility', 150, 0, 0, 0, 0, 0, 0, 75, 83, 0, 0, 12),
+('Compañía de Agua', 'utility', 150, 0, 0, 0, 0, 0, 0, 75, 83, 0, 0, 28);

@@ -370,8 +370,7 @@ impl CardService {
         // To avoid compilation checking issues with missing structs, I'll return a serde_json::Value or similar? No, strict types.
         // Use a new struct `ParticipantInventoryItem`.
         
-        Ok(all_cards.into_iter().map(|(uid, name, c)| crate::domain::entities::ParticipantCardWithUser {
-            user_id: uid,
+        Ok(all_cards.into_iter().map(|(_, name, c)| crate::domain::entities::ParticipantCardWithUser {
             user_name: name,
             card: c
         }).collect())

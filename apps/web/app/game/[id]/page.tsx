@@ -40,6 +40,7 @@ import DiceSection, { DiceSectionHandle } from '@/components/DiceSection';
 import GameBoard from '@/components/GameBoard';
 // import SpecialDiceTool from '@/components/SpecialDiceTool';
 import FloatingTools from '@/components/FloatingTools';
+import PropertyActionModal from '@/components/PropertyActionModal';
 import SettingsIcon from '@mui/icons-material/Settings';
 import StarIcon from '@mui/icons-material/Star'; // Added
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
@@ -72,35 +73,100 @@ import { useGetDiceHistory } from '@/hooks/useDice';
 import BankTracker from '@/components/BankTracker';
 import AIAdvisor from '@/components/AIAdvisor';
 
+import AuctionModal from '@/components/AuctionModal';
+import { Auction } from '@/hooks/useAuctions';
+import TradeModal from '@/components/TradeModal';
+import IncomingTradeDialog from '@/components/IncomingTradeDialog';
+import { Trade, useGetActiveTrades } from '@/hooks/useTrades';
+import { useGetGameProperties } from '@/hooks/useProperties';
+
 export default function GameSessionPage() {
     const { id } = useParams() as { id: string };
     const user = useAuthStore(state => state.user);
     const queryClient = useQueryClient();
 
+    // Auction State
+    const [activeAuction, setActiveAuction] = useState<Auction | null>(null);
+
+    // Trade State
+    const [tradeModalOpen, setTradeModalOpen] = useState(false);
+    const [tradePartnerId, setTradePartnerId] = useState<string | null>(null);
+    const [activeTrade, setActiveTrade] = useState<Trade | null>(null);
+    const [incomingTrade, setIncomingTrade] = useState<Trade | null>(null);
+
     // Movement Notification
     const [moveToast, setMoveToast] = useState<{ open: boolean; message: string }>({ open: false, message: '' });
+    const [currentTurnUserId, setCurrentTurnUserId] = useState<string | null>(null);
 
-    // WebSocket Connection
     // WebSocket Connection
     useGameSocket(id, (event: any) => {
         if (event.type === 'ParticipantUpdated') {
             const p = event.payload;
             queryClient.invalidateQueries({ queryKey: ['participants', id] });
 
-            // Show toast if position changed (we don't have old position here easily, so just show current)
             const spaceName = getSpaceName(p.position);
-            // Ideally we want user name, but payload is Participant struct which has user_id, not name.
-            // We can find name from current list (which might be stale, but good enough)
             const pName = participants.find((old: any) => old.user_id === p.user_id)?.first_name || 'Player';
             setMoveToast({ open: true, message: `${pName} landed on ${spaceName}` });
+        } else if (event.type === 'AuctionUpdated') {
+            const auction = event.payload as Auction;
+            if (auction.status === 'ACTIVE') {
+                setActiveAuction(auction);
+            } else {
+                setActiveAuction(null);
+                queryClient.invalidateQueries({ queryKey: ['gameProperties', id] });
+                queryClient.invalidateQueries({ queryKey: ['participants', id] });
+            }
+        } else if (event.type === 'TradeUpdated') {
+            const trade = event.payload as Trade;
+            queryClient.invalidateQueries({ queryKey: ['trades', id] });
+
+            // If I am target and it's pending, show incoming
+            if (trade.target_id === myParticipant?.id && trade.status === 'PENDING') {
+                setIncomingTrade(trade);
+                // Play notification sound
+                new Audio('/notification.mp3').play().catch(() => { });
+            }
+            // If it was accepted/rejected/cancelled, clear internal state if matches
+            if (['ACCEPTED', 'REJECTED', 'CANCELLED'].includes(trade.status)) {
+                if (incomingTrade?.id === trade.id) setIncomingTrade(null);
+                if (activeTrade?.id === trade.id) setActiveTrade(null);
+                // If accepted, refresh data
+                if (trade.status === 'ACCEPTED') {
+                    queryClient.invalidateQueries({ queryKey: ['gameProperties', id] });
+                    queryClient.invalidateQueries({ queryKey: ['participants', id] });
+                }
+            }
         }
     });
 
-    // Queries
     const { data: game } = useGetGame(id);
+
+    useEffect(() => {
+        if (game?.current_turn_user_id) {
+            setCurrentTurnUserId(game.current_turn_user_id);
+        }
+    }, [game]);
+
     const { data: participants = [] } = useGetParticipants(id);
     const { data: transactions = [] } = useGetTransactions(id);
     const { data: diceHistory = [] } = useGetDiceHistory(id);
+
+    // Mutations
+    const myParticipant = participants.find((p: any) => p.user_id === user?.id);
+
+    // Fetch active trades to check if I have any pending on load
+    // Fetch active trades to check if I have any pending on load
+    const { data: trades = [] } = useGetActiveTrades(id);
+
+    // Effect to set incoming trade on load if any
+    useEffect(() => {
+        if (myParticipant && trades.length > 0) {
+            const pendingForMe = trades.find((t: Trade) => t.target_id === myParticipant.id && t.status === 'PENDING');
+            if (pendingForMe) setIncomingTrade(pendingForMe);
+        }
+    }, [trades, myParticipant]);
+
+    const { data: gameProperties = [] } = useGetGameProperties(id);
 
     // Calculate Bank Balance for AI Context
     const bankBalance = useMemo(() => {
@@ -113,7 +179,6 @@ export default function GameSessionPage() {
     }, [transactions]);
 
     // Mutations
-    const myParticipant = participants.find((p: any) => p.user_id === user?.id);
     const { mutate: transfer, isPending: transferring } = usePerformTransfer();
 
     // Ref for remotely triggering dice roll
@@ -300,6 +365,11 @@ export default function GameSessionPage() {
         }
     };
 
+    const handleTradeClick = (pId: string) => {
+        setTradePartnerId(pId);
+        setTradeModalOpen(true);
+    };
+
     return (
         <Container maxWidth="lg" sx={{ mt: 4, mb: 10 }}>
             {/* Game Over Banner */}
@@ -344,6 +414,15 @@ export default function GameSessionPage() {
                     </Stack>
                 </Box>
 
+                {/* Turn Banner */}
+                {game?.status === 'ACTIVE' && currentTurnUserId && (
+                    <Box sx={{ width: '100%', mb: 2, textAlign: 'center', p: 1, bgcolor: currentTurnUserId === user?.id ? 'success.dark' : 'background.paper', borderRadius: 1 }}>
+                        <Typography variant="h5" fontWeight="bold" color={currentTurnUserId === user?.id ? 'white' : 'text.secondary'}>
+                            {currentTurnUserId === user?.id ? "IT'S YOUR TURN!" : `Waiting for ${participants.find((p: any) => p.user_id === currentTurnUserId)?.first_name || 'Player'}...`}
+                        </Typography>
+                    </Box>
+                )}
+
                 <Stack direction="row" spacing={2}>
                     {isHost && (
                         <Button
@@ -369,6 +448,7 @@ export default function GameSessionPage() {
                         participants={participants}
                         onTransfer={handleTransferClick}
                         isInDebt={(myParticipant?.balance ?? 0) < 0}
+                        onTrade={(id) => handleTradeClick(id)}
                     />
 
                     {/* Bank Controls */}
@@ -407,7 +487,22 @@ export default function GameSessionPage() {
                     </Box>
 
                     {/* Dice Roller */}
-                    <DiceSection gameId={id} ref={diceSectionRef} isInDebt={(myParticipant?.balance ?? 0) < 0} />
+                    <DiceSection
+                        gameId={id}
+                        ref={diceSectionRef}
+                        isInDebt={(myParticipant?.balance ?? 0) < 0}
+                        isMyTurn={currentTurnUserId === user?.id}
+                        onEndTurn={async () => {
+                            // Call API to end turn
+                            try {
+                                await fetch(`http://localhost:3000/api/games/${id}/end-turn`, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ userId: user?.id })
+                                });
+                            } catch (e) { console.error(e); }
+                        }}
+                    />
 
                     {/* Special Dice */}
                     {/* Special Dice Removed (Moved to Float) */}
@@ -573,6 +668,7 @@ export default function GameSessionPage() {
                     </Typography>
                     <InventorySection
                         gameId={id}
+                        myParticipantId={myParticipant?.id}
                     />
                 </Box>
             </Drawer>
@@ -658,12 +754,43 @@ export default function GameSessionPage() {
             </Box>
 
             {/* UI Layer */}
+            {myParticipant && <PropertyActionModal gameId={game?.id || ''} myPosition={myParticipant.position} />}
+
+            <AuctionModal
+                auction={activeAuction}
+                participants={participants}
+                isHost={game?.host_user_id === user?.id}
+            />
+
+            {myParticipant && (
+                <>
+                    <TradeModal
+                        open={tradeModalOpen}
+                        onClose={() => setTradeModalOpen(false)}
+                        gameId={id}
+                        me={myParticipant}
+                        opponent={participants.find((p: any) => p.id === tradePartnerId) || myParticipant} // Fallback to avoid crash, logically shouldn't happen
+                        myProperties={gameProperties.filter((p: any) => p.participant_id === myParticipant.id)}
+                        opponentProperties={gameProperties.filter((p: any) => p.participant_id === tradePartnerId)}
+                    />
+
+                    <IncomingTradeDialog
+                        trade={incomingTrade}
+                        gameId={id}
+                        userId={user?.id || ''}
+                        participants={participants}
+                        onClose={() => setIncomingTrade(null)}
+                    />
+                </>
+            )}
+
             <FloatingTools
                 gameId={game?.id || ''}
                 myParticipantId={myParticipant?.id}
                 myUserId={myParticipant?.user_id}
                 onRollDice={handleFloatingRoll}
                 isInDebt={(myParticipant?.balance ?? 0) < 0}
+                isMyTurn={currentTurnUserId === user?.id}
             />
 
         </Container >

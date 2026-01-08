@@ -5,3 +5,6 @@ pub mod dice_service;
 pub mod roulette_service;
 pub mod special_dice_service;
 pub mod card_service;
+pub mod property_service;
+pub mod auction_service;
+pub mod trade_service;

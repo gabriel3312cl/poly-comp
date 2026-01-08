@@ -128,3 +128,14 @@ pub async fn update_participant_position(
         Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
     }
 }
+
+pub async fn end_turn(
+    State(state): State<AppState>,
+    Path(game_id): Path<Uuid>,
+    auth_user: AuthorizedUser,
+) -> impl IntoResponse {
+    match state.game_service.end_turn(game_id, auth_user.user_id).await {
+        Ok(game) => (StatusCode::OK, Json(game)).into_response(),
+        Err(e) => (StatusCode::BAD_REQUEST, e.to_string()).into_response(),
+    }
+}

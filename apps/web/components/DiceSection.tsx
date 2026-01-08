@@ -36,13 +36,15 @@ import ConfirmDialog from './ConfirmDialog';
 interface DiceSectionProps {
     gameId: string;
     isInDebt?: boolean;
+    isMyTurn?: boolean;
+    onEndTurn?: () => void;
 }
 
 export interface DiceSectionHandle {
     openRollDialog: () => void;
 }
 
-const DiceSection = forwardRef<DiceSectionHandle, DiceSectionProps>(({ gameId, isInDebt }, ref) => {
+const DiceSection = forwardRef<DiceSectionHandle, DiceSectionProps>(({ gameId, isInDebt, isMyTurn, onEndTurn }, ref) => {
     const [sides, setSides] = useState<number>(6);
     const [count, setCount] = useState<number>(2);
     const [showConfig, setShowConfig] = useState<boolean>(false);
@@ -83,6 +85,12 @@ const DiceSection = forwardRef<DiceSectionHandle, DiceSectionProps>(({ gameId, i
     }, [lastRoll]);
 
     const handleRollClick = () => {
+        // If isMyTurn is explicitly provided (not undefined), enforce it
+        if (isMyTurn === false) {
+            setNotification({ open: true, message: 'It is not your turn!' });
+            return;
+        }
+
         if (isInDebt) {
             setNotification({ open: true, message: 'You cannot roll while in debt!' });
             return;
@@ -156,14 +164,14 @@ const DiceSection = forwardRef<DiceSectionHandle, DiceSectionProps>(({ gameId, i
                             </Box>
                         </Collapse>
 
-                        <Tooltip title={isInDebt ? "Cannot roll while in debt" : ""}>
-                            <span>
+                        <Tooltip title={isInDebt ? "Cannot roll while in debt" : (isMyTurn === false ? "Not your turn" : "")}>
+                            <Stack spacing={2}>
                                 <Button
                                     variant="contained"
                                     fullWidth
                                     size="large"
                                     onClick={handleRollClick}
-                                    disabled={rolling || isInDebt}
+                                    disabled={rolling || isInDebt || isMyTurn === false}
                                     startIcon={<CasinoIcon />}
                                     sx={{
                                         background: 'linear-gradient(45deg, #FE6B8B 30%, #FF8E53 90%)',
@@ -172,7 +180,19 @@ const DiceSection = forwardRef<DiceSectionHandle, DiceSectionProps>(({ gameId, i
                                 >
                                     {rolling ? 'Rolling...' : 'ROLL DICE'}
                                 </Button>
-                            </span>
+
+                                {onEndTurn && (
+                                    <Button
+                                        variant="outlined"
+                                        fullWidth
+                                        color="warning"
+                                        onClick={onEndTurn}
+                                        disabled={!isMyTurn || rolling}
+                                    >
+                                        End Turn
+                                    </Button>
+                                )}
+                            </Stack>
                         </Tooltip>
 
                         <Box mt={2}>

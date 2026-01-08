@@ -18,8 +18,8 @@ impl GameRepository for PostgresGameRepository {
     async fn create(&self, game: GameSession) -> Result<GameSession, anyhow::Error> {
         let rec = sqlx::query_as::<_, GameSession>(
             r#"
-            INSERT INTO game_sessions (id, host_user_id, name, status, created_at, ended_at, code)
-            VALUES ($1, $2, $3, $4, $5, $6, $7)
+            INSERT INTO game_sessions (id, host_user_id, name, status, created_at, ended_at, code, current_turn_user_id, turn_order)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
             RETURNING *
             "#
         )
@@ -30,6 +30,8 @@ impl GameRepository for PostgresGameRepository {
         .bind(game.created_at)
         .bind(game.ended_at)
         .bind(game.code)
+        .bind(game.current_turn_user_id)
+        .bind(game.turn_order)
         .fetch_one(&self.pool)
         .await?;
 
@@ -80,8 +82,8 @@ impl GameRepository for PostgresGameRepository {
         let updated = sqlx::query_as::<_, GameSession>(
             r#"
             UPDATE game_sessions 
-            SET host_user_id = $1, name = $2, status = $3, ended_at = $4
-            WHERE id = $5
+            SET host_user_id = $1, name = $2, status = $3, ended_at = $4, current_turn_user_id = $5, turn_order = $6, jackpot_balance = $7
+            WHERE id = $8
             RETURNING *
             "#
         )
@@ -89,6 +91,9 @@ impl GameRepository for PostgresGameRepository {
         .bind(game.name)
         .bind(game.status)
         .bind(game.ended_at)
+        .bind(game.current_turn_user_id)
+        .bind(game.turn_order)
+        .bind(game.jackpot_balance)
         .bind(game.id)
         .fetch_one(&self.pool)
         .await?;

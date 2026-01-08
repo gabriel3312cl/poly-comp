@@ -10,9 +10,10 @@ interface FloatingToolsProps {
     myUserId?: string;
     onRollDice?: () => void;
     isInDebt?: boolean;
+    isMyTurn?: boolean;
 }
 
-export default function FloatingTools({ gameId, myParticipantId, myUserId, onRollDice, isInDebt }: FloatingToolsProps) {
+export default function FloatingTools({ gameId, myParticipantId, myUserId, onRollDice, isInDebt, isMyTurn }: FloatingToolsProps) {
     return (
         <Box
             sx={{
@@ -29,12 +30,12 @@ export default function FloatingTools({ gameId, myParticipantId, myUserId, onRol
                 <FloatingCalculator />
                 <FloatingSpecialDice gameId={gameId} myParticipantId={myParticipantId} myUserId={myUserId} isInDebt={isInDebt} />
                 {onRollDice && (
-                    <Tooltip title={isInDebt ? "Cannot roll while in debt" : "Roll Dice (Shortcut)"}>
+                    <Tooltip title={isInDebt ? "Cannot roll while in debt" : (isMyTurn === false ? "Not your turn" : "Roll Dice (Shortcut)")}>
                         <span>
                             <Fab
                                 color="error"
-                                onClick={!isInDebt ? onRollDice : undefined}
-                                disabled={isInDebt}
+                                onClick={!isInDebt && (isMyTurn !== false) ? onRollDice : undefined}
+                                disabled={isInDebt || isMyTurn === false}
                                 size="medium"
                                 sx={{
                                     background: isInDebt ? 'grey' : 'linear-gradient(45deg, #FE6B8B 30%, #FF8E53 90%)',

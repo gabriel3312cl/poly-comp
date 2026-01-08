@@ -1,18 +1,46 @@
-import { Box, Typography, Button, Dialog, DialogTitle, DialogContent, DialogActions, Grid } from '@mui/material';
+import { Box, Typography, Button, Dialog, DialogTitle, DialogContent, DialogActions, Grid, Divider } from '@mui/material';
 import { useCards } from '@/hooks/useCards';
 import BovedaCard from './BovedaCard';
 import { useState } from 'react';
 import GlobalInventoryModal from './GlobalInventoryModal';
+import PropertyInventory from './PropertyInventory';
+import { useAuthStore } from '@/store/authStore';
+
+import PropertyManagerDialog from '@/components/PropertyManagerDialog';
+import { useGetAllProperties, useGetGameProperties } from '@/hooks/useProperties';
+import DomainIcon from '@mui/icons-material/Domain'; // Building icon
 
 interface InventorySectionProps {
     gameId: string;
+    myParticipantId?: string;
 }
 
-export default function InventorySection({ gameId }: InventorySectionProps) {
+export default function InventorySection({ gameId, myParticipantId }: InventorySectionProps) {
     const { inventory, inventoryLoading, useCardMutation, discardCardMutation } = useCards(gameId);
+    const user = useAuthStore(state => state.user);
     const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
     const [confirmDiscardId, setConfirmDiscardId] = useState<string | null>(null);
     const [globalModalOpen, setGlobalModalOpen] = useState(false);
+    const [managerOpen, setManagerOpen] = useState(false);
+
+    // Fetch Properties for Manager
+    const { data: allProperties = [] } = useGetAllProperties();
+    const { data: gameProperties = [] } = useGetGameProperties(gameId);
+
+    // Filter my properties
+    const myProperties = gameProperties.filter((p: any) => p.participant_id === myParticipantId);
+    // Wait, inventory[0] might be undefined. And inventory stores ParticipantCard, not Participant.
+    // I need 'participantId'. 'PropertyInventory' component receives userId.
+    // 'gameProperties' has 'participant_id'. 'user.id' maps to 'user_id' in participant list.
+    // I don't have participant ID here easily unless I fetch participants again or pass it.
+    // 'InventorySection' usage in 'GameSessionPage' -> <InventorySection gameId={id} />
+    // But 'PropertyInventory' uses userId. 'PropertyInventory' fetches its own stuff.
+    // I should probably fix myProperties filtering.
+    // I will rely on 'user.id' matching 'participants.user_id'. 
+    // But 'gameProperties' only has 'participant_id'.
+    // I need to map user_id -> participant_id.
+    // I'll assume for now I can pass `participants` as prop?
+    // Or I just fetch participants here too. It's cached.
 
     const handleUseClick = (id: string) => {
         setSelectedCardId(id);
@@ -80,6 +108,25 @@ export default function InventorySection({ gameId }: InventorySectionProps) {
 
     return (
         <Box sx={{ p: 2, overflowY: 'auto', maxHeight: '100%' }}>
+
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                <Typography variant="h6">
+                    Properties
+                </Typography>
+                <Button
+                    startIcon={<DomainIcon />}
+                    size="small"
+                    variant="contained"
+                    color="warning"
+                    onClick={() => setManagerOpen(true)}
+                >
+                    Manage Buildings
+                </Button>
+            </Box>
+
+            {user && <PropertyInventory gameId={gameId} userId={user.id} />}
+
+            <Divider sx={{ my: 3 }} />
 
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
                 <Typography variant="h6">
@@ -162,6 +209,17 @@ export default function InventorySection({ gameId }: InventorySectionProps) {
                 hasDadoDeCompra={hasDadoDeCompra}
                 myInventory={inventory || []}
             />
+
+            {user && (
+                <PropertyManagerDialog
+                    open={managerOpen}
+                    onClose={() => setManagerOpen(false)}
+                    gameId={gameId}
+                    userId={user.id}
+                    myProperties={myProperties}
+                    allProperties={allProperties}
+                />
+            )}
         </Box>
     );
 }

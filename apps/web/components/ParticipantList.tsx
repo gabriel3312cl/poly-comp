@@ -36,6 +36,7 @@ import { useParams } from 'next/navigation';
 interface ParticipantListProps {
     participants: GameParticipant[];
     onTransfer: (targetId: string, type: 'PAY' | 'CHARGE') => void;
+    onTrade?: (targetId: string) => void;
     isInDebt?: boolean;
 }
 

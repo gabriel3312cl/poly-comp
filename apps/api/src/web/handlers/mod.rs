@@ -6,3 +6,6 @@ pub mod roulette;
 pub mod special_dice;
 pub mod card;
 pub mod ws;
+pub mod property;
+pub mod auction;
+pub mod trade;

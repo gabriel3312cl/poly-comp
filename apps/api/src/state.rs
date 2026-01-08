@@ -7,6 +7,9 @@ use crate::application::{
     roulette_service::RouletteService,
     special_dice_service::SpecialDiceService,
     card_service::CardService,
+    property_service::PropertyService,
+    auction_service::AuctionService,
+    trade_service::TradeService,
 };
 use crate::config::Config;
 use tokio::sync::broadcast;
@@ -21,6 +24,9 @@ pub struct AppState {
     pub roulette_service: Arc<RouletteService>,
     pub special_dice_service: Arc<SpecialDiceService>,
     pub card_service: Arc<CardService>,
+    pub property_service: Arc<PropertyService>,
+    pub auction_service: Arc<AuctionService>,
+    pub trade_service: Arc<TradeService>,
     pub config: Config,
     pub tx: broadcast::Sender<GameEvent>,
 }

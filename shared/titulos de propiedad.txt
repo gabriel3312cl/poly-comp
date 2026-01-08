@@ -1,0 +1,350 @@
+- grupo rojo
+
+avenida indiana
+renta 18
+renta grupo color 36
+renta con una casa 90
+renta con 2 casas 250
+renta con 3 casas 700
+renta con 4 casas 875
+renta con hotel 1050
+casa cuesta 150 c/u
+hotel cuesta 150
+hipoteca 110
+deshipoteca 121
+
+avenida illinois
+renta 20
+renta grupo color 40
+renta con una casa 100
+renta con 2 casas 300
+renta con 3 casas 750
+renta con 4 casas 925
+renta con hotel 1100
+casa cuesta 150 c/u
+hotel cuesta 150
+hipoteca 120
+deshipoteca 132
+
+avenida kentucky
+renta 18
+renta grupo color 36
+renta con una casa 90
+renta con 2 casas 250
+renta con 3 casas 700
+renta con 4 casas 875
+renta con hotel 1050
+casa cuesta 150 c/u
+hotel cuesta 150
+hipoteca 110
+deshipoteca 121
+
+- grupo amarillo
+
+
+avenida ventnor
+renta 22
+renta grupo color 44
+renta con una casa 110
+renta con 2 casas 330
+renta con 3 casas 800
+renta con 4 casas 975
+renta con hotel 1150
+casa cuesta 150 c/u
+hotel cuesta 150
+hipoteca 130
+deshipoteca 143
+
+jardines marvin
+renta 24
+renta grupo color 48
+renta con una casa 120
+renta con 2 casas 360
+renta con 3 casas 850
+renta con 4 casas 1025
+renta con hotel 1200
+casa cuesta 150 c/u
+hotel cuesta 150
+hipoteca 140
+deshipoteca 154
+
+avenida atlantico
+renta 22
+renta grupo color 44
+renta con una casa 110
+renta con 2 casas 330
+renta con 3 casas 800
+renta con 4 casas 975
+renta con hotel 1150
+casa cuesta 150 c/u
+hotel cuesta 150
+hipoteca 130
+deshipoteca 143
+
+- grupo naranjo
+
+plaza st.james
+renta 14
+renta grupo color 28
+renta con una casa 70
+renta con 2 casas 200
+renta con 3 casas 550
+renta con 4 casas 750
+renta con hotel 950
+casa cuesta 100 c/u
+hotel cuesta 100
+hipoteca 90
+deshipoteca 99
+
+avenida tennessee
+renta 14
+renta grupo color 28
+renta con una casa 70
+renta con 2 casas 200
+renta con 3 casas 550
+renta con 4 casas 750
+renta con hotel 950
+casa cuesta 100 c/u
+hotel cuesta 100
+hipoteca 90
+deshipoteca 99
+
+avenida nueva york
+renta 16
+renta grupo color 32
+renta con una casa 80
+renta con 2 casas 220
+renta con 3 casas 600
+renta con 4 casas 800
+renta con hotel 1000
+casa cuesta 100 c/u
+hotel cuesta 100
+hipoteca 100
+deshipoteca 110
+
+- grupo cafe
+
+avenida baltica
+renta 4
+renta grupo color 8
+renta con una casa 20
+renta con 2 casas 60
+renta con 3 casas 180
+renta con 4 casas 320
+renta con hotel 450
+casa cuesta 50 c/u
+hotel cuesta 50
+hipoteca 30
+deshipoteca 33
+
+avenida mediterraneo
+renta 2
+renta grupo color 4
+renta con una casa 10
+renta con 2 casas 30
+renta con 3 casas 90
+renta con 4 casas 160
+renta con hotel 250
+casa cuesta 50 c/u
+hotel cuesta 50
+hipoteca 30
+deshipoteca 33
+
+- azul
+
+plaza park
+renta 35
+renta grupo color 70
+renta con una casa 175
+renta con 2 casas 500
+renta con 3 casas 1100
+renta con 4 casas 1300
+renta con hotel 1500
+casa cuesta 200 c/u
+hotel cuesta 200
+hipoteca 175
+deshipoteca 193
+
+el muelle
+renta 50
+renta grupo color 100
+renta con una casa 200
+renta con 2 casas 600
+renta con 3 casas 1400
+renta con 4 casas 1700
+renta con hotel 2000
+casa cuesta 200 c/u
+hotel cuesta 200
+hipoteca 200
+deshipoteca 200
+
+- grupo verde
+
+avenida pennsylvania
+renta 28
+renta grupo color 56
+renta con una casa 150
+renta con 2 casas 450
+renta con 3 casas 1000
+renta con 4 casas 1200
+renta con hotel 1400
+casa cuesta 200 c/u
+hotel cuesta 200
+hipoteca 160
+deshipoteca 176
+
+avenida carolina del norte
+renta 26
+renta grupo color 52
+renta con una casa 130
+renta con 2 casas 390
+renta con 3 casas 900
+renta con 4 casas 1100
+renta con hotel 1275
+casa cuesta 200 c/u
+hotel cuesta 200
+hipoteca 150
+deshipoteca 165
+
+avenida pacifico
+renta 26
+renta grupo color 52
+renta con una casa 130
+renta con 2 casas 390
+renta con 3 casas 900
+renta con 4 casas 1100
+renta con hotel 1275
+casa cuesta 200 c/u
+hotel cuesta 200
+hipoteca 150
+deshipoteca 165
+
+- grupo celeste
+
+avenida connecticut
+renta 8
+renta grupo color 16
+renta con una casa 40
+renta con 2 casas 100
+renta con 3 casas 300
+renta con 4 casas 450
+renta con hotel 600
+casa cuesta 50 c/u
+hotel cuesta 50
+hipoteca 60
+deshipoteca 66
+
+avenida vermont
+renta 6
+renta grupo color 12
+renta con una casa 30
+renta con 2 casas 90
+renta con 3 casas 270
+renta con 4 casas 400
+renta con hotel 550
+casa cuesta 50 c/u
+hotel cuesta 50
+hipoteca 50
+deshipoteca 55
+
+avenida oriental
+renta 6
+renta grupo color 12
+renta con una casa 30
+renta con 2 casas 90
+renta con 3 casas 270
+renta con 4 casas 400
+renta con hotel 550
+casa cuesta 50 c/u
+hotel cuesta 50
+hipoteca 50
+deshipoteca 55
+
+- grupo morado
+
+plaza san carlos
+renta 10
+renta grupo color 20
+renta con una casa 50
+renta con 2 casas 150
+renta con 3 casas 450
+renta con 4 casas 625
+renta con hotel 750
+casa cuesta 100 c/u
+hotel cuesta 100
+hipoteca 70
+deshipoteca 77
+
+avenida virginia
+renta 12
+renta grupo color 24
+renta con una casa 60
+renta con 2 casas 180
+renta con 3 casas 500
+renta con 4 casas 700
+renta con hotel 900
+casa cuesta 100 c/u
+hotel cuesta 100
+hipoteca 80
+deshipoteca 88
+
+avenida estados
+renta 10
+renta grupo color 20
+renta con una casa 50
+renta con 2 casas 150
+renta con 3 casas 450
+renta con 4 casas 625
+renta con hotel 750
+casa cuesta 100 c/u
+hotel cuesta 100
+hipoteca 70
+deshipoteca 77
+
+- ferrocarriles
+
+b. & o.
+renta 25
+si es dueño de 2 50
+si es dueño de 3 100
+si es dueño de 4 200
+hipoteca 100
+deshipoteca 110
+
+via rapida
+renta 25
+si es dueño de 2 50
+si es dueño de 3 100
+si es dueño de 4 200
+hipoteca 100
+deshipoteca 110
+
+reading
+renta 25
+si es dueño de 2 50
+si es dueño de 3 100
+si es dueño de 4 200
+hipoteca 100
+deshipoteca 110
+
+pennsylvania
+renta 25
+si es dueño de 2 50
+si es dueño de 3 100
+si es dueño de 4 200
+hipoteca 100
+deshipoteca 110
+
+- servicios
+
+compañia de electricidad
+si es dueño de un "servicio", la renta es 4 veces lo que muestren los dados
+si es dueño de ambros "servicios", la renta es 10 veces lo que muestren los dados
+hipoteca 75
+deshipotecar 83
+
+compañia de agua
+si es dueño de un "servicio", la renta es 4 veces lo que muestren los dados
+si es dueño de ambros "servicios", la renta es 10 veces lo que muestren los dados
+hipoteca 75
+deshipotecar 83

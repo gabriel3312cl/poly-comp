@@ -71,6 +71,42 @@ pub trait CardRepository {
     // History
     async fn log_usage(&self, game_id: Uuid, participant_id: Uuid, card_id: Uuid, description: Option<String>) -> Result<crate::domain::entities::CardUsageHistory, anyhow::Error>;
     
-    // Seeding
     async fn ensure_cards_seeded(&self) -> Result<(), anyhow::Error>;
+}
+
+#[cfg_attr(test, mockall::automock)]
+#[async_trait]
+pub trait PropertyRepository {
+    async fn find_all_properties(&self) -> Result<Vec<crate::domain::entities::Property>, anyhow::Error>;
+    async fn find_property_by_id(&self, id: Uuid) -> Result<Option<crate::domain::entities::Property>, anyhow::Error>;
+    
+    // Ownership
+    async fn find_ownership_by_game(&self, game_id: Uuid) -> Result<Vec<crate::domain::entities::ParticipantProperty>, anyhow::Error>;
+    async fn find_participant_properties(&self, game_id: Uuid, participant_id: Uuid) -> Result<Vec<crate::domain::entities::ParticipantProperty>, anyhow::Error>;
+    async fn assign_property(&self, pp: crate::domain::entities::ParticipantProperty) -> Result<crate::domain::entities::ParticipantProperty, anyhow::Error>;
+    async fn update_property_ownership(&self, pp: crate::domain::entities::ParticipantProperty) -> Result<crate::domain::entities::ParticipantProperty, anyhow::Error>;
+    
+    // Helper to transfer (update participant_id)
+    async fn transfer_property(&self, game_id: Uuid, property_id: Uuid, new_participant_id: Uuid) -> Result<(), anyhow::Error>;
+}
+
+#[cfg_attr(test, mockall::automock)]
+#[async_trait]
+pub trait AuctionRepository {
+    async fn create(&self, auction: crate::domain::entities::Auction) -> Result<crate::domain::entities::Auction, anyhow::Error>;
+    #[allow(dead_code)]
+    async fn find_by_game(&self, game_id: Uuid) -> Result<Vec<crate::domain::entities::Auction>, anyhow::Error>;
+    async fn find_active_by_game(&self, game_id: Uuid) -> Result<Option<crate::domain::entities::Auction>, anyhow::Error>;
+    async fn update(&self, auction: crate::domain::entities::Auction) -> Result<crate::domain::entities::Auction, anyhow::Error>;
+    async fn find_by_id(&self, id: Uuid) -> Result<Option<crate::domain::entities::Auction>, anyhow::Error>;
+}
+
+#[cfg_attr(test, mockall::automock)]
+#[async_trait]
+pub trait TradeRepository {
+    async fn create(&self, trade: crate::domain::entities::Trade) -> Result<crate::domain::entities::Trade, anyhow::Error>;
+    #[allow(dead_code)]
+    async fn find_by_game(&self, game_id: Uuid) -> Result<Vec<crate::domain::entities::Trade>, anyhow::Error>;
+    async fn find_by_id(&self, id: Uuid) -> Result<Option<crate::domain::entities::Trade>, anyhow::Error>;
+    async fn update(&self, trade: crate::domain::entities::Trade) -> Result<crate::domain::entities::Trade, anyhow::Error>;
 }

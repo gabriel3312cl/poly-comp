@@ -7,6 +7,8 @@ import AssessmentIcon from '@mui/icons-material/Assessment';
 import MapIcon from '@mui/icons-material/Map';
 import WhatshotIcon from '@mui/icons-material/Whatshot';
 import CloseIcon from '@mui/icons-material/Close';
+import { useGetGameProperties, useGetAllProperties } from '@/hooks/useProperties';
+import { useParams } from 'next/navigation';
 
 interface Participant {
     id: string;
@@ -30,11 +32,35 @@ const PROBABILITIES: Record<number, number> = {
 
 export default function GameBoard({ participants, diceHistory = [] }: GameBoardProps) {
     const user = useAuthStore(state => state.user);
+    const { id: gameId } = useParams() as { id: string }; // Get gameId from URL
+    const { data: ownership = [] } = useGetGameProperties(gameId);
+    const { data: allProperties = [] } = useGetAllProperties();
+
     const myParticipant = participants.find(p => p.user_id === user?.id);
 
     // UI State
     const [viewLayer, setViewLayer] = useState<'standard' | 'heatmap' | 'landings'>('standard');
     const [selectedSpaceIndex, setSelectedSpaceIndex] = useState<number | null>(null);
+
+    // Helper to find owner
+    const getOwnerColor = (spaceIndex: number) => {
+        // Find property definition for this space
+        const propDef = allProperties.find(p => p.board_position === spaceIndex);
+        if (!propDef) return null;
+
+        // Find ownership
+        const owned = ownership.find(o => o.property_id === propDef.id);
+        if (!owned) return null;
+
+        // Find owner participant color
+        const ownerParticipant = participants.find(p => p.id === owned.participant_id);
+        // Default colors if not set
+        // Usually participants have assigned colors? 
+        // If not, we can hash the ID or use a fallback. 
+        // For now, let's assume specific user logic or fallback.
+        // Actually, let's use a nice distinct color for the owner marker.
+        return ownerParticipant?.user_id === user?.id ? '#4caf50' : '#f44336'; // Green for me, Red for others
+    };
 
     // Logic: Reconstruct Landing History
     // We simulate the game from the beginning to find "hot spots"
@@ -50,13 +76,9 @@ export default function GameBoard({ participants, diceHistory = [] }: GameBoardP
 
         // Initialize positions at 0 (Go)
         participants.forEach(p => positions[p.user_id] = 0);
-        // Also ensure historical users are tracked if they left? 
-        // For now, only track current participants or users in history.
-        // Better: Initialize for any user found in history.
 
         sortedHistory.forEach(h => {
             const uid = h.roll.user_id;
-            // Default to 0 if new user
             const current = positions[uid] !== undefined ? positions[uid] : 0;
             const next = (current + h.roll.total) % 40;
 
@@ -251,6 +273,7 @@ export default function GameBoard({ participants, diceHistory = [] }: GameBoardP
                             const overlayColor = getSpaceColorOverlay(space.index);
                             const isSelected = selectedSpaceIndex === space.index;
                             const occupants = participants.filter(p => p.position === space.index);
+                            const ownerColor = getOwnerColor(space.index);
 
                             return (
                                 <Box
@@ -259,9 +282,10 @@ export default function GameBoard({ participants, diceHistory = [] }: GameBoardP
                                     sx={{
                                         ...pos,
                                         bgcolor: 'white',
-                                        border: isSelected ? '3px solid #FFD700' : '1px solid black',
+                                        // Highlight owner with thick border
+                                        border: isSelected ? '3px solid #FFD700' : (ownerColor ? `3px solid ${ownerColor}` : '1px solid black'),
                                         //@ts-ignore
-                                        borderColor: isSelected ? '#FFD700' : 'rgba(0,0,0,0.12)',
+                                        borderColor: isSelected ? '#FFD700' : (ownerColor || 'rgba(0,0,0,0.12)'),
                                         position: 'relative',
                                         display: 'flex',
                                         flexDirection: 'column',
@@ -276,6 +300,23 @@ export default function GameBoard({ participants, diceHistory = [] }: GameBoardP
                                     <Box sx={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', bgcolor: overlayColor, zIndex: 5, pointerEvents: 'none' }} />
 
                                     {space.color && <Box sx={{ width: '100%', height: space.type === 'corner' ? 0 : '18%', bgcolor: space.color, borderBottom: '1px solid black' }} />}
+
+                                    {/* Owner Badge (if owned by me/others) */}
+                                    {ownerColor && (
+                                        <Box
+                                            sx={{
+                                                position: 'absolute',
+                                                top: -6,
+                                                right: -6,
+                                                width: 12,
+                                                height: 12,
+                                                bgcolor: ownerColor,
+                                                borderRadius: '50%',
+                                                zIndex: 8,
+                                                border: '1px solid white'
+                                            }}
+                                        />
+                                    )}
 
                                     <Box zIndex={6} display="flex" flexDirection="column" alignItems="center" justifyContent="center" width="100%" height="100%" sx={{ pointerEvents: 'none' }}>
                                         <Typography sx={{ fontSize: '0.6rem', fontWeight: 'bold', color: 'black', textAlign: 'center', lineHeight: 1, width: '100%', wordBreak: 'break-all' }}>

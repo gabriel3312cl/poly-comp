@@ -9,7 +9,9 @@ export interface GameSession {
     name: string;
     status: 'WAITING' | 'ACTIVE' | 'FINISHED';
     created_at: string;
-    jackpot_balance: number; // Added field
+    jackpot_balance: number;
+    current_turn_user_id?: string;
+    turn_order?: string[];
 }
 
 export interface GameParticipant {

@@ -6,3 +6,6 @@ pub mod dice_repository;
 pub mod roulette_repository;
 pub mod special_dice_repository;
 pub mod card_repository;
+pub mod property_repository;
+pub mod auction_repository;
+pub mod trade_repository;

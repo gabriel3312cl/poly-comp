@@ -62,6 +62,8 @@ pub struct GameSession {
     pub jackpot_balance: BigDecimal,
     pub created_at: Option<OffsetDateTime>,
     pub ended_at: Option<OffsetDateTime>,
+    pub current_turn_user_id: Option<Uuid>,
+    pub turn_order: Option<sqlx::types::Json<Vec<Uuid>>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
@@ -257,7 +259,76 @@ pub struct CardUsageHistory {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ParticipantCardWithUser {
-    pub user_id: Uuid,
     pub user_name: String,
     pub card: ParticipantCard,
+}
+
+// ==========================================
+// NEW ENTITIES (PROPERTIES, AUCTIONS, TRADES)
+// ==========================================
+
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+pub struct Property {
+    pub id: Uuid,
+    pub name: String,
+    pub group_color: String,
+    pub price: BigDecimal,
+    pub rent_base: BigDecimal,
+    pub rent_house_1: Option<BigDecimal>,
+    pub rent_house_2: Option<BigDecimal>,
+    pub rent_house_3: Option<BigDecimal>,
+    pub rent_house_4: Option<BigDecimal>,
+    pub rent_hotel: Option<BigDecimal>,
+    pub mortgage_value: BigDecimal,
+    pub unmortgage_cost: BigDecimal,
+    pub house_cost: Option<BigDecimal>,
+    pub hotel_cost: Option<BigDecimal>,
+    pub board_position: Option<i32>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+pub struct ParticipantProperty {
+    pub id: Uuid,
+    pub game_id: Uuid,
+    pub participant_id: Uuid,
+    pub property_id: Uuid,
+    pub is_mortgaged: bool,
+    #[sqlx(default)]
+    pub house_count: i32,
+    #[sqlx(default)]
+    pub hotel_count: i32,
+    // Joined fields (optional)
+    pub property_name: Option<String>,
+    pub group_color: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+pub struct Auction {
+    pub id: Uuid,
+    pub game_id: Uuid,
+    pub property_id: Uuid,
+    pub current_bid: BigDecimal,
+    pub highest_bidder_id: Option<Uuid>,
+    pub status: String,
+    #[serde(with = "time::serde::rfc3339::option")]
+    pub created_at: Option<OffsetDateTime>,
+    #[serde(with = "time::serde::rfc3339::option")]
+    pub ends_at: Option<OffsetDateTime>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+pub struct Trade {
+    pub id: Uuid,
+    pub game_id: Uuid,
+    pub initiator_id: Uuid,
+    pub target_id: Uuid,
+    pub offer_cash: BigDecimal,
+    pub offer_properties: Option<sqlx::types::Json<Vec<Uuid>>>,
+    pub offer_cards: Option<sqlx::types::Json<Vec<Uuid>>>,
+    pub request_cash: BigDecimal,
+    pub request_properties: Option<sqlx::types::Json<Vec<Uuid>>>,
+    pub request_cards: Option<sqlx::types::Json<Vec<Uuid>>>,
+    pub status: String,
+    #[serde(with = "time::serde::rfc3339::option")]
+    pub created_at: Option<OffsetDateTime>,
 }
