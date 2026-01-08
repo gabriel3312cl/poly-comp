@@ -55,7 +55,7 @@ export default function GameBoard({ participants, diceHistory = [] }: GameBoardP
         // Better: Initialize for any user found in history.
 
         sortedHistory.forEach(h => {
-            const uid = h.user_id;
+            const uid = h.roll.user_id;
             // Default to 0 if new user
             const current = positions[uid] !== undefined ? positions[uid] : 0;
             const next = (current + h.roll.total) % 40;
@@ -147,7 +147,7 @@ export default function GameBoard({ participants, diceHistory = [] }: GameBoardP
 
                 <Grid container spacing={3}>
                     {/* Basic Info */}
-                    <Grid item xs={12} md={3}>
+                    <Grid size={{ xs: 12, md: 3 }}>
                         <Card variant="outlined" sx={{ height: '100%', bgcolor: 'rgba(255,255,255,0.02)' }}>
                             <CardContent sx={{ p: 2, '&:last-child': { p: 2 } }}>
                                 <Typography variant="caption" color="text.secondary">Price / Value</Typography>
@@ -157,17 +157,17 @@ export default function GameBoard({ participants, diceHistory = [] }: GameBoardP
                     </Grid>
 
                     {/* Intelligence */}
-                    <Grid item xs={12} md={9}>
+                    <Grid size={{ xs: 12, md: 9 }}>
                         <Card variant="outlined" sx={{ bgcolor: 'rgba(255,255,255,0.05)' }}>
                             <CardContent sx={{ p: 2, '&:last-child': { p: 2 } }}>
                                 <Grid container spacing={2} alignItems="center">
-                                    <Grid item xs={12} md={4}>
+                                    <Grid size={{ xs: 12, md: 4 }}>
                                         <Typography variant="caption" color="text.secondary">Distance</Typography>
                                         <Typography variant="h6">{steps} steps</Typography>
                                         {!reachable && <Typography variant="caption" color="error">Unreachable (Next Turn)</Typography>}
                                     </Grid>
 
-                                    <Grid item xs={12} md={4}>
+                                    <Grid size={{ xs: 12, md: 4 }}>
                                         <Typography variant="caption" color="text.secondary">Math Probability</Typography>
                                         <Typography variant="h6" color="info.main">{mathProb.toFixed(1)}%</Typography>
                                         {reachable && (
@@ -177,7 +177,7 @@ export default function GameBoard({ participants, diceHistory = [] }: GameBoardP
                                         )}
                                     </Grid>
 
-                                    <Grid item xs={12} md={4}>
+                                    <Grid size={{ xs: 12, md: 4 }}>
                                         <Typography variant="caption" color="text.secondary">Global Visits</Typography>
                                         <Typography variant="h6" color="secondary.main">{visits} times</Typography>
                                         <Box sx={{ width: '100%', height: 4, bgcolor: 'rgba(255,255,255,0.1)', mt: 0.5, borderRadius: 1 }}>
