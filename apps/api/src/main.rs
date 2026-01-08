@@ -36,17 +36,6 @@ async fn main() -> anyhow::Result<()> {
     
     tracing::info!("Database connected successfully.");
 
-    // Simple migration: Ensure position column exists
-    sqlx::query("ALTER TABLE game_participants ADD COLUMN IF NOT EXISTS position INTEGER DEFAULT 0;")
-        .execute(&pool)
-        .await
-        .map_err(|e| {
-             tracing::error!("Failed to run position migration: {}", e);
-             e
-        })?;
-
-
-
     // Repositories
     let user_repo = Arc::new(infrastructure::postgres::user_repository::PostgresUserRepository::new(pool.clone()));
     let game_repo = Arc::new(infrastructure::postgres::game_repository::PostgresGameRepository::new(pool.clone()));
