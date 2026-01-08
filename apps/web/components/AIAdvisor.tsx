@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import {
     Box, Fab, Dialog, DialogTitle, DialogContent, DialogActions,
     TextField, Button, Typography, IconButton, Paper, Avatar,
@@ -11,6 +11,8 @@ import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import { useAIAdvisor } from '@/hooks/useAIAdvisor';
 import { useAuthStore } from '@/store/authStore';
 import { DiceHistoryItem } from '@/hooks/useDice';
+import { getSpaceName } from '@/utils/boardSpaces';
+import { parseServerDate } from '@/utils/formatters';
 
 interface Participant {
     id: string;
@@ -20,19 +22,56 @@ interface Participant {
     balance: number;
 }
 
+interface Transaction {
+    id: string;
+    amount: number;
+    description: string | null;
+    from_participant_id?: string | null;
+    to_participant_id?: string | null;
+    created_at: string;
+}
+
 interface AIAdvisorProps {
     participants: Participant[];
     diceHistory: DiceHistoryItem[];
-    bankBalance: number; // Rough estimate or tracked value
+    bankBalance: number;
+    transactions?: Transaction[];
 }
 
-export default function AIAdvisor({ participants, diceHistory, bankBalance }: AIAdvisorProps) {
+export default function AIAdvisor({ participants, diceHistory, bankBalance, transactions = [] }: AIAdvisorProps) {
     const [open, setOpen] = useState(false);
     const [input, setInput] = useState('');
     const user = useAuthStore(state => state.user);
     const bottomRef = useRef<HTMLDivElement>(null);
 
     const { askAdvisor, messages, isLoading, addUserMessage } = useAIAdvisor();
+
+    // Calculate Landing Stats
+    const landingStats = useMemo(() => {
+        const stats: Record<number, number> = {};
+        diceHistory.forEach(h => {
+            // Calculate hypothetical landing (this is simplified, ideally we need real positions)
+            // But valid history has 'position' if we had full logs.
+            // For now, let's just list the rolls as "Action Log".
+        });
+        return stats;
+    }, [diceHistory]);
+
+    // Format Transactions
+    const recentTransactions = transactions.slice(0, 5).map(t => {
+        const from = participants.find(p => p.id === t.from_participant_id)?.first_name || 'Bank';
+        const to = participants.find(p => p.id === t.to_participant_id)?.first_name || 'Bank';
+        return `- $${t.amount} (${from} -> ${to}): ${t.description}`;
+    }).join('\n');
+
+    // Recent Rolls
+    const recentRolls = diceHistory.slice(0, 8).map(d => {
+        const pName = participants.find(p => p.user_id === d.roll.user_id)?.first_name || 'Unknown';
+        const r1 = d.roll.results?.[0] || '?';
+        const r2 = d.roll.results?.[1] || '?';
+        return `- ${pName} rolled ${d.roll.total} (${r1}+${r2})`;
+    }).join('\n');
+
 
     // Auto-scroll to bottom
     useEffect(() => {
@@ -48,15 +87,18 @@ export default function AIAdvisor({ participants, diceHistory, bankBalance }: AI
         const context = `
             My Name: ${user?.first_name}
             My Balance: $${myParticipant?.balance || 0}
-            My Position: Space Index ${myParticipant?.position || 0}
+            My Position: ${getSpaceName(myParticipant?.position || 0)}
             
             Opponents:
-            ${participants.filter(p => p.user_id !== user?.id).map(p => `- ${p.first_name}: $${p.balance} (Pos: ${p.position})`).join('\n')}
+            ${participants.filter(p => p.user_id !== user?.id).map(p => `- ${p.first_name}: $${p.balance} (Pos: ${getSpaceName(p.position)})`).join('\n')}
             
             Bank Reserves: $${bankBalance}
             
-            Last 3 Dice Rolls:
-            ${diceHistory.slice(0, 3).map(d => `- Total ${d.roll.total}`).join('\n')}
+            Recent Activity (Last 5 Transactions):
+            ${recentTransactions}
+            
+            Recent Dice Rolls (Last 8):
+            ${recentRolls}
         `;
 
         addUserMessage(input);

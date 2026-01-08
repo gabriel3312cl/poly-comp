@@ -41,6 +41,7 @@ import { useGetSpecialDiceHistory, useRecordSpecialDiceRoll } from '@/hooks/useS
 import { parseServerDate } from '@/utils/formatters';
 import CardDrawer from './CardDrawer';
 import BovedaMarket from './BovedaMarket';
+import { useCards } from '@/hooks/useCards';
 
 // Define Die Interfaces
 interface DieFace {
@@ -114,11 +115,13 @@ export default function FloatingSpecialDice({ gameId, myParticipantId, myUserId 
 
     // History Hooks
     const { data: history = [] } = useGetSpecialDiceHistory(gameId);
+    const { inventory } = useCards(gameId);
     const recordRollMutation = useRecordSpecialDiceRoll();
 
     // UI State
     const [menuOpen, setMenuOpen] = useState(false);
     const [resultOpen, setResultOpen] = useState(false);
+    const [manualSelectionOpen, setManualSelectionOpen] = useState(false);
     const [rolledDie, setRolledDie] = useState<SpecialDie | null>(null);
     const [resultFace, setResultFace] = useState<DieFace | null>(null);
     const [isRolling, setIsRolling] = useState(false);
@@ -145,17 +148,46 @@ export default function FloatingSpecialDice({ gameId, myParticipantId, myUserId 
     };
 
     const handleConfirmRoll = () => {
+
         if (!selectedDie) return;
         setMenuOpen(false); // Close the selection menu
         const die = selectedDie;
 
+        // Check ownership for "Dado Bóveda" (Dado de Compra)
+        // Assume card title contains "Dado de Compra" or similar based on ID 'boveda'
+        // Actually, let's allow manual choice if they have ANY 'boveda' type card that grants this power?
+        // Or specific title. Let's assume ownership of the card matching the die allows it.
+        // For 'boveda', the card is likely "Dado de Compra" or similar.
+        // Let's look for a card with type 'boveda' in inventory?
+        // The user request said "the user who possesses that card".
+
+        const hasControlCard = inventory?.some(c => c.title.toLowerCase().includes('compra') || c.type_ === 'boveda');
+
+        if (die.id === 'boveda' && hasControlCard) {
+            // Manual Selection Mode
+            setManualSelectionOpen(true);
+            setConfirmOpen(false);
+            return;
+        }
+
+        performRoll(die);
+        setConfirmOpen(false);
+    };
+
+    const performRoll = (die: SpecialDie, manualFace?: DieFace) => {
         setIsRolling(true);
         playSound('/dice.mp3');
 
-        // Simulate roll delay
+        // Simulate roll delay (shorter if manual)
         setTimeout(() => {
-            const randomIndex = Math.floor(Math.random() * die.faces.length);
-            const face = die.faces[randomIndex];
+            let face: DieFace;
+
+            if (manualFace) {
+                face = manualFace;
+            } else {
+                const randomIndex = Math.floor(Math.random() * die.faces.length);
+                face = die.faces[randomIndex];
+            }
 
             setRolledDie(die);
             setResultFace(face);
@@ -189,14 +221,14 @@ export default function FloatingSpecialDice({ gameId, myParticipantId, myUserId 
             if (die.id === 'boveda') {
                 if (face.label.includes('Comprar')) {
                     setBovedaMode('buy');
-                    setMarketMessage('You rolled "Buy" - Select a card to take');
+                    setMarketMessage(manualFace ? 'Selected "Buy"' : 'You rolled "Buy" - Select a card to take');
                     setTimeout(() => {
                         setResultOpen(false); // Close result
                         setBovedaMarketOpen(true); // Open market
                     }, 1500);
                 } else if (face.label.includes('Intercambiar')) {
                     setBovedaMode('exchange');
-                    setMarketMessage('You rolled "Exchange" - Swap a card');
+                    setMarketMessage(manualFace ? 'Selected "Exchange"' : 'You rolled "Exchange" - Swap a card');
                     setTimeout(() => {
                         setResultOpen(false); // Close result
                         setBovedaMarketOpen(true); // Open market
@@ -215,9 +247,12 @@ export default function FloatingSpecialDice({ gameId, myParticipantId, myUserId 
                 });
             }
         }, 800);
-
-        setConfirmOpen(false);
     };
+
+    // ... existing handleCloseResult ...
+
+    // Add Manual Selection Dialog in render
+
 
     const handleCloseResult = () => {
         setResultOpen(false);
@@ -320,6 +355,46 @@ export default function FloatingSpecialDice({ gameId, myParticipantId, myUserId 
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={() => setMenuOpen(false)}>Close</Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Manual Selection Dialog */}
+            <Dialog open={manualSelectionOpen} onClose={() => setManualSelectionOpen(false)} maxWidth="sm" fullWidth>
+                <DialogTitle fontWeight="bold" textAlign="center" sx={{ bgcolor: 'warning.main', color: 'black' }}>
+                    Control "Dado Bóveda"
+                </DialogTitle>
+                <DialogContent sx={{ pt: 3 }}>
+                    <Typography textAlign="center" gutterBottom>
+                        Tienes la tarjeta de control. ¡Elige el resultado!
+                    </Typography>
+                    <Grid container spacing={2} sx={{ mt: 1 }}>
+                        {selectedDie?.faces.map((face, index) => (
+                            <Grid size={{ xs: 4 }} key={index}>
+                                <Card
+                                    variant="outlined"
+                                    sx={{
+                                        position: 'relative',
+                                        cursor: 'pointer',
+                                        '&:hover': { bgcolor: 'action.hover', borderColor: 'warning.main' }
+                                    }}
+                                    onClick={() => {
+                                        setManualSelectionOpen(false);
+                                        performRoll(selectedDie, face);
+                                    }}
+                                >
+                                    <Box p={2} display="flex" flexDirection="column" alignItems="center" gap={1}>
+                                        <Box color="warning.main">{face.icon}</Box>
+                                        <Typography variant="caption" align="center" fontWeight="bold">
+                                            {face.label}
+                                        </Typography>
+                                    </Box>
+                                </Card>
+                            </Grid>
+                        ))}
+                    </Grid>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setManualSelectionOpen(false)}>Cancelar</Button>
                 </DialogActions>
             </Dialog>
 

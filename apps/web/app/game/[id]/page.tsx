@@ -639,6 +639,7 @@ export default function GameSessionPage() {
                     participants={participants}
                     diceHistory={diceHistory}
                     bankBalance={bankBalance}
+                    transactions={transactions}
                 />
 
                 {/* Inventory FAB */}

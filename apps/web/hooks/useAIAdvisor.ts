@@ -15,7 +15,8 @@ interface AIAdvisorResponse {
 }
 
 // Default to Local LM Studio
-const DEFAULT_API_URL = process.env.NEXT_PUBLIC_AI_API_URL || 'http://localhost:1234/v1/chat/completions';
+// Default to Internal Proxy
+const DEFAULT_API_URL = '/api/ai';
 const DEFAULT_MODEL = process.env.NEXT_PUBLIC_AI_MODEL_ID || 'local-model';
 
 export const useAIAdvisor = () => {
@@ -34,13 +35,24 @@ export const useAIAdvisor = () => {
                 - Evalúa el riesgo financiero de cada movimiento.
                 - Sugiere intercambios, compras o ahorros basándote en el estado actual del tablero y los oponentes.
                 - Mantén un tono profesional pero competitivo y astuto (como un banquero de inversión de Wall Street).
+
+                REGLAS CLAVE DEL JUEGO (Contexto):
+                1. Edificios: Se construye uniformemente. 4 casas -> 1 hotel. No se puede construir si hay hipotecas en el grupo.
+                2. Subastas: Si no compras una propiedad al caer, se SUBASTA (base 10).
+                3. Intercambios: Se puede intercambiar dinero, propiedades y cartas de cárcel. Propiedades hipotecadas se pueden pasar (nuevo dueño paga 10% o levanta hipoteca).
+                4. Bancarrota:
+                   - Si debes a otro jugador: Le das todo (propiedades hipotecadas incluidas).
+                   - Si debes al banco: Se subasta todo.
+                5. Cárcel: Sales con dobles, pagando 50, o con carta. 3 turnos sin dobles -> pagas 50 y sales. Cobras alquiler en la cárcel.
+                6. Alquileres: Se duplican si tienes todo el grupo de color (sin edificar).
                 
                 Estado del Juego:
                 ${context}
                 
-                Reglas Clave:
+                Instrucciones de Respuesta:
                 Responde siempre en ESPAÑOL.
                 Sé conciso (máximo 2-3 frases contundentes).
+                Usa el contexto (nombres de calles, montos exactos) para justificar tu consejo.
                 Prioriza la victoria sobre la piedad.`
             };
 
@@ -72,6 +84,10 @@ export const useAIAdvisor = () => {
         },
         onSuccess: (reply) => {
             setMessages(prev => [...prev, { role: 'assistant', content: reply }]);
+        },
+        onError: (error) => {
+            console.error('AI Advisor Error:', error);
+            setMessages(prev => [...prev, { role: 'system', content: `Error: No pude conectar con el cerebro de la IA. Asegúrate de que LM Studio esté corriendo en ${DEFAULT_API_URL}` }]);
         }
     });
 

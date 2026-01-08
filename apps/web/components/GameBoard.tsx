@@ -230,7 +230,7 @@ export default function GameBoard({ participants, diceHistory = [] }: GameBoardP
                         position: 'relative',
                         aspectRatio: '1/1',
                         width: '100%',
-                        maxWidth: 800,
+                        maxWidth: 'calc(100vh - 240px)', // Ensure height fits in viewport
                         mx: 'auto'
                     }}
                 >
