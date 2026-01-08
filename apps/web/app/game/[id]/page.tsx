@@ -25,7 +25,7 @@ import TransactionHistory from '@/components/TransactionHistory';
 import TransferDialog from '@/components/TransferDialog';
 // import CalculatorTool from '@/components/CalculatorTool';
 import RouletteTool from '@/components/RouletteTool';
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance'; // Bank Icon
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import ExitToAppIcon from '@mui/icons-material/ExitToApp';
@@ -59,7 +59,8 @@ import {
     FormControl,
     InputLabel,
     DialogActions,
-    Alert // Added
+    Alert, // Added
+    Tooltip // Added
 } from '@mui/material';
 import { useUpdateGame } from '@/hooks/useGame';
 import { useEffect } from 'react';
@@ -68,6 +69,8 @@ import { getSpaceName } from '@/utils/boardSpaces';
 import { Snackbar, Alert as MuiAlert } from '@mui/material'; // Using MuiAlert
 import { useQueryClient } from '@tanstack/react-query';
 import { useGetDiceHistory } from '@/hooks/useDice';
+import BankTracker from '@/components/BankTracker';
+import AIAdvisor from '@/components/AIAdvisor';
 
 export default function GameSessionPage() {
     const { id } = useParams() as { id: string };
@@ -98,6 +101,16 @@ export default function GameSessionPage() {
     const { data: participants = [] } = useGetParticipants(id);
     const { data: transactions = [] } = useGetTransactions(id);
     const { data: diceHistory = [] } = useGetDiceHistory(id);
+
+    // Calculate Bank Balance for AI Context
+    const bankBalance = useMemo(() => {
+        let balance = 20580;
+        transactions.forEach(tx => {
+            if (!tx.from_participant_id && tx.to_participant_id) balance -= Number(tx.amount);
+            else if (tx.from_participant_id && !tx.to_participant_id) balance += Number(tx.amount);
+        });
+        return balance;
+    }, [transactions]);
 
     // Mutations
     const myParticipant = participants.find((p: any) => p.user_id === user?.id);
@@ -357,38 +370,13 @@ export default function GameSessionPage() {
                         onTransfer={handleTransferClick}
                     />
 
-                    {/* Bank Controls (Floating or Block) */}
-                    <Box mt={4} p={3} bgcolor="rgba(255,255,255,0.05)" borderRadius={4} border="1px dashed #555">
-                        <Typography variant="h6" gutterBottom color="text.secondary"> Bank Actions </Typography>
-                        <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
-                            <Button
-                                variant="contained"
-                                color="success"
-                                startIcon={<AccountBalanceIcon />}
-                                onClick={() => handleBankClick('BANK_RECEIVE')}
-                                sx={{ flexGrow: 1 }}
-                            >
-                                Receive (Go, Salary)
-                            </Button>
-                            <Button
-                                variant="contained"
-                                color="info" // Distinct color
-                                startIcon={<AccountBalanceIcon />}
-                                onClick={handleQuickSalary}
-                                sx={{ flexGrow: 1 }}
-                            >
-                                Quick Salary ($200)
-                            </Button>
-                            <Button
-                                variant="contained"
-                                color="error"
-                                startIcon={<AccountBalanceIcon />}
-                                onClick={() => handleBankClick('BANK_PAY')}
-                                sx={{ flexGrow: 1 }}
-                            >
-                                Pay (Tax, Fines)
-                            </Button>
-                        </Stack>
+                    {/* Bank Controls */}
+                    <Box mt={4}>
+                        <BankTracker
+                            transactions={transactions}
+                            onAction={handleBankClick}
+                            onQuickSalary={handleQuickSalary}
+                        />
                     </Box>
 
                     {/* Game Board (Visual) */}
@@ -571,16 +559,6 @@ export default function GameSessionPage() {
                 type={manualCardType}
             />
 
-            {/* Inventory FAB */}
-            <Fab
-                color="secondary"
-                aria-label="inventory"
-                sx={{ position: 'fixed', bottom: 32, right: 32 }}
-                onClick={() => setInventoryOpen(true)}
-            >
-                <BackpackIcon />
-            </Fab>
-
             {/* Inventory Drawer */}
             <Drawer
                 anchor="right"
@@ -654,6 +632,28 @@ export default function GameSessionPage() {
                     {moveToast.message}
                 </MuiAlert>
             </Snackbar>
+            {/* Right Side Floating Buttons Stack */}
+            <Box sx={{ position: 'fixed', bottom: 32, right: 32, display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'center', zIndex: 1000 }}>
+                {/* AI Advisor Button */}
+                <AIAdvisor
+                    participants={participants}
+                    diceHistory={diceHistory}
+                    bankBalance={bankBalance}
+                />
+
+                {/* Inventory FAB */}
+                <Tooltip title="Inventario" placement="left">
+                    <Fab
+                        color="secondary"
+                        aria-label="inventory"
+                        onClick={() => setInventoryOpen(true)}
+                        sx={{ bgcolor: 'secondary.main' }}
+                    >
+                        <BackpackIcon />
+                    </Fab>
+                </Tooltip>
+            </Box>
+
             {/* UI Layer */}
             <FloatingTools
                 gameId={game?.id || ''}
