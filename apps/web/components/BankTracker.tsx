@@ -10,6 +10,7 @@ interface BankTrackerProps {
     transactions: Transaction[];
     onAction: (type: 'BANK_RECEIVE' | 'BANK_PAY') => void;
     onQuickSalary: () => void;
+    isInDebt?: boolean;
 }
 
 const INITIAL_BANK_BALANCE = 20580;
@@ -21,7 +22,7 @@ const pulse = keyframes`
   100% { transform: scale(1); }
 `;
 
-export default function BankTracker({ transactions, onAction, onQuickSalary }: BankTrackerProps) {
+export default function BankTracker({ transactions, onAction, onQuickSalary, isInDebt }: BankTrackerProps) {
     // Calculate Balance
     const calculateBalance = () => {
         let balance = INITIAL_BANK_BALANCE;
@@ -126,6 +127,7 @@ export default function BankTracker({ transactions, onAction, onQuickSalary }: B
                     startIcon={<ArrowUpwardIcon />}
                     onClick={() => onAction('BANK_PAY')}
                     fullWidth
+                    disabled={isInDebt}
                     sx={{ py: 1.5, fontSize: '1rem', fontWeight: 'bold' }}
                 >
                     Deposit (Tax/Fines)

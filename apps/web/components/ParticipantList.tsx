@@ -36,9 +36,10 @@ import { useParams } from 'next/navigation';
 interface ParticipantListProps {
     participants: GameParticipant[];
     onTransfer: (targetId: string, type: 'PAY' | 'CHARGE') => void;
+    isInDebt?: boolean;
 }
 
-export default function ParticipantList({ participants, onTransfer }: ParticipantListProps) {
+export default function ParticipantList({ participants, onTransfer, isInDebt }: ParticipantListProps) {
     const { id: gameId } = useParams() as { id: string };
     const user = useAuthStore((state) => state.user);
     const { mutate: updatePos } = useUpdatePosition();
@@ -127,15 +128,18 @@ export default function ParticipantList({ participants, onTransfer }: Participan
                                 {/* Actions: Only show for others. If it's me, I can't pay myself. */}
                                 {!isMe && (
                                     <Stack direction="row" spacing={1} mt={2}>
-                                        <Tooltip title="Pay this player">
-                                            <IconButton
-                                                size="small"
-                                                color="error"
-                                                sx={{ border: '1px solid', borderColor: 'error.main', borderRadius: 2 }}
-                                                onClick={() => onTransfer(p.id, 'PAY')}
-                                            >
-                                                <SendIcon fontSize="small" /> <Typography variant="caption" ml={0.5}>PAY</Typography>
-                                            </IconButton>
+                                        <Tooltip title={isInDebt ? "Cannot pay while in debt" : "Pay this player"}>
+                                            <span style={{ cursor: isInDebt ? 'not-allowed' : 'pointer' }}>
+                                                <IconButton
+                                                    size="small"
+                                                    color="error"
+                                                    disabled={isInDebt}
+                                                    sx={{ border: '1px solid', borderColor: 'error.main', borderRadius: 2 }}
+                                                    onClick={() => onTransfer(p.id, 'PAY')}
+                                                >
+                                                    <SendIcon fontSize="small" /> <Typography variant="caption" ml={0.5}>PAY</Typography>
+                                                </IconButton>
+                                            </span>
                                         </Tooltip>
 
                                         {/* "Charge" implies I take their money (e.g. they landed on my property) */}

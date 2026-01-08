@@ -368,6 +368,7 @@ export default function GameSessionPage() {
                     <ParticipantList
                         participants={participants}
                         onTransfer={handleTransferClick}
+                        isInDebt={(myParticipant?.balance ?? 0) < 0}
                     />
 
                     {/* Bank Controls */}
@@ -376,6 +377,7 @@ export default function GameSessionPage() {
                             transactions={transactions}
                             onAction={handleBankClick}
                             onQuickSalary={handleQuickSalary}
+                            isInDebt={(myParticipant?.balance ?? 0) < 0}
                         />
                     </Box>
 
@@ -405,7 +407,7 @@ export default function GameSessionPage() {
                     </Box>
 
                     {/* Dice Roller */}
-                    <DiceSection gameId={id} ref={diceSectionRef} />
+                    <DiceSection gameId={id} ref={diceSectionRef} isInDebt={(myParticipant?.balance ?? 0) < 0} />
 
                     {/* Special Dice */}
                     {/* Special Dice Removed (Moved to Float) */}
@@ -661,6 +663,7 @@ export default function GameSessionPage() {
                 myParticipantId={myParticipant?.id}
                 myUserId={myParticipant?.user_id}
                 onRollDice={handleFloatingRoll}
+                isInDebt={(myParticipant?.balance ?? 0) < 0}
             />
 
         </Container >

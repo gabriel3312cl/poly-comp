@@ -21,7 +21,8 @@ import {
     FormControlLabel,
     Checkbox,
     Snackbar,
-    Alert
+    Alert,
+    Tooltip
 } from '@mui/material';
 import { getSpaceName } from '@/utils/boardSpaces';
 import CasinoIcon from '@mui/icons-material/Casino';
@@ -34,13 +35,14 @@ import ConfirmDialog from './ConfirmDialog';
 
 interface DiceSectionProps {
     gameId: string;
+    isInDebt?: boolean;
 }
 
 export interface DiceSectionHandle {
     openRollDialog: () => void;
 }
 
-const DiceSection = forwardRef<DiceSectionHandle, DiceSectionProps>(({ gameId }, ref) => {
+const DiceSection = forwardRef<DiceSectionHandle, DiceSectionProps>(({ gameId, isInDebt }, ref) => {
     const [sides, setSides] = useState<number>(6);
     const [count, setCount] = useState<number>(2);
     const [showConfig, setShowConfig] = useState<boolean>(false);
@@ -56,6 +58,10 @@ const DiceSection = forwardRef<DiceSectionHandle, DiceSectionProps>(({ gameId },
     // Expose handle for external triggering
     useImperativeHandle(ref, () => ({
         openRollDialog: () => {
+            if (isInDebt) {
+                setNotification({ open: true, message: 'You cannot roll while in debt!' });
+                return;
+            }
             setConfirmRollOpen(true);
         }
     }));
@@ -77,6 +83,10 @@ const DiceSection = forwardRef<DiceSectionHandle, DiceSectionProps>(({ gameId },
     }, [lastRoll]);
 
     const handleRollClick = () => {
+        if (isInDebt) {
+            setNotification({ open: true, message: 'You cannot roll while in debt!' });
+            return;
+        }
         setConfirmRollOpen(true);
     };
 
@@ -146,20 +156,24 @@ const DiceSection = forwardRef<DiceSectionHandle, DiceSectionProps>(({ gameId },
                             </Box>
                         </Collapse>
 
-                        <Button
-                            variant="contained"
-                            fullWidth
-                            size="large"
-                            onClick={handleRollClick}
-                            disabled={rolling}
-                            startIcon={<CasinoIcon />}
-                            sx={{
-                                background: 'linear-gradient(45deg, #FE6B8B 30%, #FF8E53 90%)',
-                                boxShadow: '0 3px 5px 2px rgba(255, 105, 135, .3)',
-                            }}
-                        >
-                            {rolling ? 'Rolling...' : 'ROLL DICE'}
-                        </Button>
+                        <Tooltip title={isInDebt ? "Cannot roll while in debt" : ""}>
+                            <span>
+                                <Button
+                                    variant="contained"
+                                    fullWidth
+                                    size="large"
+                                    onClick={handleRollClick}
+                                    disabled={rolling || isInDebt}
+                                    startIcon={<CasinoIcon />}
+                                    sx={{
+                                        background: 'linear-gradient(45deg, #FE6B8B 30%, #FF8E53 90%)',
+                                        boxShadow: '0 3px 5px 2px rgba(255, 105, 135, .3)',
+                                    }}
+                                >
+                                    {rolling ? 'Rolling...' : 'ROLL DICE'}
+                                </Button>
+                            </span>
+                        </Tooltip>
 
                         <Box mt={2}>
                             <FormControlLabel

@@ -108,9 +108,10 @@ interface FloatingSpecialDiceProps {
     gameId: string;
     myParticipantId?: string;
     myUserId?: string;
+    isInDebt?: boolean;
 }
 
-export default function FloatingSpecialDice({ gameId, myParticipantId, myUserId }: FloatingSpecialDiceProps) {
+export default function FloatingSpecialDice({ gameId, myParticipantId, myUserId, isInDebt }: FloatingSpecialDiceProps) {
     const { mutate: transfer } = usePerformTransfer();
 
     // History Hooks
@@ -161,7 +162,7 @@ export default function FloatingSpecialDice({ gameId, myParticipantId, myUserId 
         // Let's look for a card with type 'boveda' in inventory?
         // The user request said "the user who possesses that card".
 
-        const hasControlCard = inventory?.some(c => c.title.toLowerCase().includes('compra') || c.type_ === 'boveda');
+        const hasControlCard = inventory?.some(c => c.title.toLowerCase() === 'dado de compra');
 
         if (die.id === 'boveda' && hasControlCard) {
             // Manual Selection Mode
@@ -220,12 +221,18 @@ export default function FloatingSpecialDice({ gameId, myParticipantId, myUserId 
             // Boveda Logic - Auto Close & Open Market
             if (die.id === 'boveda') {
                 if (face.label.includes('Comprar')) {
-                    setBovedaMode('buy');
-                    setMarketMessage(manualFace ? 'Selected "Buy"' : 'You rolled "Buy" - Select a card to take');
-                    setTimeout(() => {
-                        setResultOpen(false); // Close result
-                        setBovedaMarketOpen(true); // Open market
-                    }, 1500);
+                    if (isInDebt) {
+                        // User is in debt, prevent buying
+                        setMarketMessage('Cannot buy from Market while in debt!');
+                        // Do NOT open market
+                    } else {
+                        setBovedaMode('buy');
+                        setMarketMessage(manualFace ? 'Selected "Buy"' : 'You rolled "Buy" - Select a card to take');
+                        setTimeout(() => {
+                            setResultOpen(false); // Close result
+                            setBovedaMarketOpen(true); // Open market
+                        }, 1500);
+                    }
                 } else if (face.label.includes('Intercambiar')) {
                     setBovedaMode('exchange');
                     setMarketMessage(manualFace ? 'Selected "Exchange"' : 'You rolled "Exchange" - Swap a card');
