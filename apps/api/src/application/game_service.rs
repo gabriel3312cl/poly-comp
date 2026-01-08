@@ -265,7 +265,6 @@ mod tests {
                 jackpot_balance: BigDecimal::from(0),
                 created_at: None,
                 ended_at: None,
-                ended_at: None,
             })));
 
         let (tx, _rx) = tokio::sync::broadcast::channel(10);
