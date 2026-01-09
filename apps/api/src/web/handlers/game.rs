@@ -12,6 +12,7 @@ use crate::web::extractors::AuthorizedUser;
 pub struct UpdateGameRequest {
     pub name: Option<String>,
     pub status: Option<String>,
+    pub initiative_rolls: Option<std::collections::HashMap<Uuid, i32>>,
 }
 
 #[derive(Deserialize)]
@@ -78,7 +79,7 @@ pub async fn update_game(
     auth_user: AuthorizedUser,
     Json(payload): Json<UpdateGameRequest>,
 ) -> impl IntoResponse {
-    match state.game_service.update_game(game_id, auth_user.user_id, payload.name, payload.status).await {
+    match state.game_service.update_game(game_id, auth_user.user_id, payload.name, payload.status, payload.initiative_rolls).await {
         Ok(game) => (StatusCode::OK, Json(game)).into_response(),
         Err(e) => (StatusCode::BAD_REQUEST, e.to_string()).into_response(),
     }

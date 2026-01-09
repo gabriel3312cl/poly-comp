@@ -6,6 +6,7 @@ import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import theme from '@/utils/theme';
 import { useState } from 'react';
+import { Toaster } from 'react-hot-toast';
 
 export default function Providers({ children }: { children: React.ReactNode }) {
     // Ensure QueryClient is created only once per request on client
@@ -24,6 +25,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
                 <CssBaseline />
                 <QueryClientProvider client={queryClient}>
                     {children}
+                    <Toaster position="bottom-right" />
                 </QueryClientProvider>
             </ThemeProvider>
         </AppRouterCacheProvider>

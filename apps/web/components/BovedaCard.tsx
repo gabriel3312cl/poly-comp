@@ -97,7 +97,7 @@ export default function BovedaCard({
                         disabled={disabled}
                         fullWidth
                     >
-                        Buy
+                        Comprar
                     </Button>
                 )}
 
@@ -111,7 +111,7 @@ export default function BovedaCard({
                         disabled={disabled}
                         fullWidth
                     >
-                        Swap
+                        Cambiar
                     </Button>
                 )}
 
@@ -125,7 +125,7 @@ export default function BovedaCard({
                         disabled={disabled}
                         fullWidth
                     >
-                        Use
+                        Usar
                     </Button>
                 )}
 
@@ -140,7 +140,7 @@ export default function BovedaCard({
                         fullWidth={!useable && !purchasable && !canExchange} // Full width if only action
                         sx={useable ? { maxWidth: '40px', minWidth: '40px', p: 0 } : {}} // Compact if sharing space? Or just let flex handle it.
                     >
-                        {useable ? "" : "Discard"}
+                        {useable ? "" : "Descartar"}
                     </Button>
                 )}
                 {/* 

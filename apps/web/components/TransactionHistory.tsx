@@ -32,9 +32,9 @@ export default function TransactionHistory({ transactions, participants, onUndo 
     const [isOpen, setIsOpen] = useState(false);
 
     const getName = (id: string | null) => {
-        if (!id) return 'Bank';
+        if (!id) return 'Banco';
         const p = participants.find(part => part.id === id);
-        return p ? `${p.first_name}` : 'Unknown';
+        return p ? `${p.first_name}` : 'Desconocido';
     };
 
     return (
@@ -47,7 +47,7 @@ export default function TransactionHistory({ transactions, participants, onUndo 
                 onClick={() => setIsOpen(!isOpen)}
                 sx={{ cursor: 'pointer', userSelect: 'none' }}
             >
-                <Typography variant="h6" fontWeight="bold">Transaction History</Typography>
+                <Typography variant="h6" fontWeight="bold">Historial de Transacciones</Typography>
                 {isOpen ? <ExpandLessIcon /> : <ExpandMoreIcon />}
             </Box>
 
@@ -55,13 +55,13 @@ export default function TransactionHistory({ transactions, participants, onUndo 
                 <Paper variant="outlined" sx={{ maxHeight: 300, overflow: 'auto', bgcolor: 'background.paper', borderRadius: 2 }}>
                     {!transactions.length && (
                         <Box textAlign="center" py={4} color="text.secondary">
-                            <Typography>No transactions yet.</Typography>
+                            <Typography>No hay transacciones aún.</Typography>
                         </Box>
                     )}
                     <List sx={{ p: 0 }}>
                         {transactions.map((tx) => {
                             const timestamp = parseServerDate(tx.created_at);
-                            const timeStr = timestamp ? new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Invalid Date';
+                            const timeStr = timestamp ? new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Fecha Inválida';
 
                             return (
                                 <ListItem
@@ -88,7 +88,7 @@ export default function TransactionHistory({ transactions, participants, onUndo 
                                         secondary={
                                             <Stack direction="row" justifyContent="space-between" alignItems="center" component="div" mt={0.5}>
                                                 <Typography variant="caption" color="text.secondary">
-                                                    {tx.description || 'Transfer'}
+                                                    {tx.description || 'Transferencia'}
                                                 </Typography>
                                                 <Typography variant="caption" color="text.disabled">
                                                     {timeStr}

@@ -223,11 +223,11 @@ export default function FloatingSpecialDice({ gameId, myParticipantId, myUserId,
                 if (face.label.includes('Comprar')) {
                     if (isInDebt) {
                         // User is in debt, prevent buying
-                        setMarketMessage('Cannot buy from Market while in debt!');
+                        setMarketMessage('¡No puedes comprar del Mercado mientras estés en deuda!');
                         // Do NOT open market
                     } else {
                         setBovedaMode('buy');
-                        setMarketMessage(manualFace ? 'Selected "Buy"' : 'You rolled "Buy" - Select a card to take');
+                        setMarketMessage(manualFace ? 'Seleccionado: "Comprar"' : '¡Salió "Comprar"! - Selecciona una carta');
                         setTimeout(() => {
                             setResultOpen(false); // Close result
                             setBovedaMarketOpen(true); // Open market
@@ -235,7 +235,7 @@ export default function FloatingSpecialDice({ gameId, myParticipantId, myUserId,
                     }
                 } else if (face.label.includes('Intercambiar')) {
                     setBovedaMode('exchange');
-                    setMarketMessage(manualFace ? 'Selected "Exchange"' : 'You rolled "Exchange" - Swap a card');
+                    setMarketMessage(manualFace ? 'Seleccionado: "Intercambiar"' : '¡Salió "Intercambiar"! - Cambia una carta');
                     setTimeout(() => {
                         setResultOpen(false); // Close result
                         setBovedaMarketOpen(true); // Open market
@@ -269,7 +269,7 @@ export default function FloatingSpecialDice({ gameId, myParticipantId, myUserId,
 
     return (
         <>
-            <Tooltip title="Special Dice">
+            <Tooltip title="Dados Especiales">
                 <Fab
                     color="secondary"
                     onClick={() => setMenuOpen(true)}
@@ -281,7 +281,7 @@ export default function FloatingSpecialDice({ gameId, myParticipantId, myUserId,
 
             {/* Selection Menu Dialog */}
             <Dialog open={menuOpen} onClose={() => setMenuOpen(false)} maxWidth="sm" fullWidth>
-                <DialogTitle textAlign="center" fontWeight="bold">Select Special Dice</DialogTitle>
+                <DialogTitle textAlign="center" fontWeight="bold">Seleccionar Dado Especial</DialogTitle>
                 <DialogContent>
                     <Grid container spacing={2} sx={{ mt: 1 }}>
                         {DIES.map((die) => (
@@ -323,13 +323,13 @@ export default function FloatingSpecialDice({ gameId, myParticipantId, myUserId,
                             sx={{ cursor: 'pointer', userSelect: 'none' }}
                         >
                             <HistoryIcon fontSize="small" color="disabled" />
-                            <Typography variant="caption" color="text.secondary">Dice History</Typography>
+                            <Typography variant="caption" color="text.secondary">Historial de Dados</Typography>
                             {showHistory ? <ExpandLessIcon fontSize="small" color="disabled" /> : <ExpandMoreIcon fontSize="small" color="disabled" />}
                         </Stack>
                         <Collapse in={showHistory}>
                             <Box maxHeight={150} overflow="auto" bgcolor="rgba(0,0,0,0.2)" borderRadius={1}>
                                 <List dense disablePadding>
-                                    {history.length === 0 && <Box p={1}><Typography variant="body2" color="text.disabled">No rolls yet.</Typography></Box>}
+                                    {history.length === 0 && <Box p={1}><Typography variant="body2" color="text.disabled">Sin lanzamientos aún.</Typography></Box>}
                                     {history.map((item: any) => {
                                         const ts = parseServerDate(item.created_at);
                                         const timeStr = ts ? new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
@@ -361,7 +361,7 @@ export default function FloatingSpecialDice({ gameId, myParticipantId, myUserId,
 
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setMenuOpen(false)}>Close</Button>
+                    <Button onClick={() => setMenuOpen(false)}>Cerrar</Button>
                 </DialogActions>
             </Dialog>
 
@@ -408,7 +408,7 @@ export default function FloatingSpecialDice({ gameId, myParticipantId, myUserId,
             {/* Result Dialog */}
             <Dialog open={resultOpen} onClose={handleCloseResult} maxWidth="xs" fullWidth>
                 <DialogTitle fontWeight="bold" textAlign="center" sx={{ pt: 4 }}>
-                    {rolledDie?.name} Result
+                    Resultado: {rolledDie?.name}
                 </DialogTitle>
                 <DialogContent>
                     <Box
@@ -437,13 +437,13 @@ export default function FloatingSpecialDice({ gameId, myParticipantId, myUserId,
 
                         {resultFace?.action === 'PAY_PLAYER' && (
                             <Typography variant="caption" color="success.main" sx={{ bgcolor: 'rgba(0,255,0,0.1)', px: 1, borderRadius: 1 }}>
-                                Auto-paid ${resultFace.value} to you!
+                                ¡Pago automático de ${resultFace.value} para ti!
                             </Typography>
                         )}
                         {/* Show auto-redirect message if applicable */}
                         {rolledDie?.id === 'boveda' && resultFace && (resultFace.label.includes('Comprar') || resultFace.label.includes('Intercambiar')) && (
                             <Typography variant="body2" color="warning.main" sx={{ mt: 2, fontStyle: 'italic' }}>
-                                Opening Market...
+                                Abriendo Mercado...
                             </Typography>
                         )}
                     </Box>
@@ -457,11 +457,11 @@ export default function FloatingSpecialDice({ gameId, myParticipantId, myUserId,
 
             <ConfirmDialog
                 open={confirmOpen}
-                title="Roll Special Die?"
-                description={`Are you sure you want to roll ${selectedDie?.name}?`}
+                title="¿Lanzar Dado Especial?"
+                description={`¿Estás seguro de que quieres lanzar el ${selectedDie?.name}?`}
                 onConfirm={handleConfirmRoll}
                 onClose={() => setConfirmOpen(false)}
-                confirmText="Roll"
+                confirmText="Lanzar"
                 severity="info"
             />
 
@@ -476,7 +476,7 @@ export default function FloatingSpecialDice({ gameId, myParticipantId, myUserId,
             {/* Boveda Market Dialog */}
             <Dialog open={bovedaMarketOpen} onClose={() => setBovedaMarketOpen(false)} maxWidth="md" fullWidth>
                 <DialogTitle>
-                    {bovedaMode === 'buy' ? 'Boveda Market - Buy Card' : 'Boveda Market - Exchange Card'}
+                    {bovedaMode === 'buy' ? 'Mercado Bóveda - Comprar Carta' : 'Mercado Bóveda - Cambiar Carta'}
                 </DialogTitle>
                 <DialogContent>
                     {marketMessage && <Typography color="info.main" gutterBottom>{marketMessage}</Typography>}
@@ -490,7 +490,7 @@ export default function FloatingSpecialDice({ gameId, myParticipantId, myUserId,
                     />
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setBovedaMarketOpen(false)}>Close</Button>
+                    <Button onClick={() => setBovedaMarketOpen(false)}>Cerrar</Button>
                 </DialogActions>
             </Dialog>
 

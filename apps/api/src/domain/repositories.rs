@@ -88,6 +88,7 @@ pub trait PropertyRepository {
     
     // Helper to transfer (update participant_id)
     async fn transfer_property(&self, game_id: Uuid, property_id: Uuid, new_participant_id: Uuid) -> Result<(), anyhow::Error>;
+    async fn delete_ownership(&self, game_id: Uuid, property_id: Uuid) -> Result<(), anyhow::Error>;
 }
 
 #[cfg_attr(test, mockall::automock)]

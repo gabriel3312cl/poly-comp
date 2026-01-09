@@ -128,7 +128,14 @@ impl GameService {
         self.participant_repo.remove_participant(game_id, user_id).await
     }
 
-    pub async fn update_game(&self, game_id: Uuid, user_id: Uuid, name: Option<String>, status: Option<String>) -> Result<GameSession, anyhow::Error> {
+    pub async fn update_game(
+        &self, 
+        game_id: Uuid, 
+        user_id: Uuid, 
+        name: Option<String>, 
+        status: Option<String>,
+        initiative_rolls: Option<std::collections::HashMap<Uuid, i32>>,
+    ) -> Result<GameSession, anyhow::Error> {
         let mut game = self.game_repo.find_by_id(game_id).await?
             .ok_or_else(|| anyhow::anyhow!("Game not found"))?;
 
@@ -151,17 +158,16 @@ impl GameService {
 
                  // 2. Roll Initiative
                  let mut initiatives: Vec<(Uuid, i32)> = Vec::new();
-                 for p in &participants {
-                     let roll = rng().random_range(2..=12); // rand 0.9 syntax? or gen_range? 
-                     // 'rng()' returns ThreadRng. 'Rng' trait provides gen_range.
-                     // Newer rand uses random_range or gen_range. Assuming gen_range based on imports.
-                     // Actually let's restrict to standard gen_range(2..=12).
-                     // Wait, 'use rand::{rng, Rng};' 
-                     // If it's rand 0.8, rng() is not the constructor usually, it's thread_rng().
-                     // Line 4 says 'use rand::{rng, Rng}'.
-                     // Line 30 uses 'rng().sample_iter'.
-                     // This suggests 'rng' is a function.
-                     initiatives.push((p.user_id, roll));
+                 if let Some(rolls) = initiative_rolls {
+                     for p in &participants {
+                         let roll = rolls.get(&p.user_id).cloned().unwrap_or(0);
+                         initiatives.push((p.user_id, roll));
+                     }
+                 } else {
+                     for p in &participants {
+                         let roll = rng().random_range(2..=12);
+                         initiatives.push((p.user_id, roll));
+                     }
                  }
                  
                  // Sort descending by roll
@@ -173,7 +179,6 @@ impl GameService {
                  game.current_turn_user_id = Some(turn_order[0]);
                  
                  // Broadcast Turn Update immediately (or let GameUpdated handle it)
-                 // Start event?
                  let _ = self.tx.send(crate::domain::events::GameEvent::TurnUpdated { 
                      game_id, 
                      current_turn_user_id: turn_order[0]

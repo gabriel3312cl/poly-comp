@@ -116,4 +116,15 @@ impl PropertyRepository for PostgresPropertyRepository {
         .await?;
         Ok(())
     }
+
+    async fn delete_ownership(&self, game_id: Uuid, property_id: Uuid) -> Result<(), anyhow::Error> {
+        sqlx::query(
+            "DELETE FROM participant_properties WHERE game_id = $1 AND property_id = $2"
+        )
+        .bind(game_id)
+        .bind(property_id)
+        .execute(&self.pool)
+        .await?;
+        Ok(())
+    }
 }

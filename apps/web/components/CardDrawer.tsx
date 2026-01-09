@@ -42,7 +42,7 @@ export default function CardDrawer({ open, onClose, gameId, type }: CardDrawerPr
                 {!drawn ? (
                     <Box textAlign="center">
                         <Typography variant="h5" gutterBottom fontWeight="bold" sx={{ textTransform: 'capitalize' }}>
-                            {type} Deck
+                            Mazo de {type === 'arca' ? 'Arca Comunal' : type === 'fortuna' ? 'Fortuna' : 'Bonificación'}
                         </Typography>
                         <Box
                             onClick={handleDraw}
@@ -61,7 +61,7 @@ export default function CardDrawer({ open, onClose, gameId, type }: CardDrawerPr
                             <Typography variant="h3">?</Typography>
                         </Box>
                         <Typography variant="caption" display="block" sx={{ mt: 2 }}>
-                            Tap to Draw
+                            Toca para Robar
                         </Typography>
                     </Box>
                 ) : (
@@ -75,7 +75,7 @@ export default function CardDrawer({ open, onClose, gameId, type }: CardDrawerPr
                             />
                         )}
                         <Button onClick={handleClose} fullWidth variant="contained" sx={{ mt: 3 }}>
-                            Okay
+                            Entendido
                         </Button>
                     </Box>
                 )}

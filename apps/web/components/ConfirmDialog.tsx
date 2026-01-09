@@ -26,8 +26,8 @@ export default function ConfirmDialog({
     description,
     onConfirm,
     onClose,
-    confirmText = 'Confirm',
-    cancelText = 'Cancel',
+    confirmText = 'Confirmar',
+    cancelText = 'Cancelar',
     severity = 'info'
 }: ConfirmDialogProps) {
 

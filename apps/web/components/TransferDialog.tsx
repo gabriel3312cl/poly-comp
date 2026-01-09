@@ -45,10 +45,10 @@ export default function TransferDialog({ open, onClose, onConfirm, targetName, t
 
     const getTitle = () => {
         switch (type) {
-            case 'PAY': return `Pay ${targetName}`;
-            case 'CHARGE': return `Charge ${targetName}`;
-            case 'BANK_PAY': return `Pay to Bank`;
-            case 'BANK_RECEIVE': return `Receive from Bank`;
+            case 'PAY': return `Pagar a ${targetName}`;
+            case 'CHARGE': return `Cobrar a ${targetName}`;
+            case 'BANK_PAY': return `Pagar al Banco`;
+            case 'BANK_RECEIVE': return `Recibir del Banco`;
         }
     };
 
@@ -68,7 +68,7 @@ export default function TransferDialog({ open, onClose, onConfirm, targetName, t
             <DialogContent>
                 <Stack spacing={3} mt={1}>
                     <TextField
-                        label="Amount"
+                        label="Cantidad"
                         type="number"
                         fullWidth
                         value={amount}
@@ -81,7 +81,7 @@ export default function TransferDialog({ open, onClose, onConfirm, targetName, t
 
                     {/* Preset Buttons Grid */}
                     <Stack spacing={1}>
-                        <Typography variant="caption" color="text.secondary">Add amount:</Typography>
+                        <Typography variant="caption" color="text.secondary">Añadir cantidad:</Typography>
                         <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ gap: 1 }}>
                             {PRESETS.map(val => (
                                 <Button
@@ -103,12 +103,12 @@ export default function TransferDialog({ open, onClose, onConfirm, targetName, t
                         onClick={handleClear}
                         disabled={!amount}
                     >
-                        Clear Amount
+                        Limpiar Cantidad
                     </Button>
 
                     <TextField
-                        label="For what? (Optional)"
-                        placeholder="Rent, Tax, Go..."
+                        label="¿Para qué? (Opcional)"
+                        placeholder="Alquiler, Impuestos, Salida (GO)..."
                         fullWidth
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
@@ -116,7 +116,7 @@ export default function TransferDialog({ open, onClose, onConfirm, targetName, t
                 </Stack>
             </DialogContent>
             <DialogActions sx={{ p: 2 }}>
-                <Button onClick={onClose} size="large">Cancel</Button>
+                <Button onClick={onClose} size="large">Cancelar</Button>
                 <Button
                     onClick={handleSubmit}
                     variant="contained"
@@ -124,7 +124,7 @@ export default function TransferDialog({ open, onClose, onConfirm, targetName, t
                     size="large"
                     disabled={!amount || loading}
                 >
-                    Confirm
+                    Confirmar
                 </Button>
             </DialogActions>
         </Dialog>

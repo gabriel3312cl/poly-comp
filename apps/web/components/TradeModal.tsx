@@ -59,9 +59,9 @@ export default function TradeModal({
         <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
             <DialogTitle sx={{ textAlign: 'center', bgcolor: 'primary.dark', color: 'white' }}>
                 <Stack direction="row" alignItems="center" justifyContent="center" spacing={2}>
-                    <Typography variant="h5">Propose Trade</Typography>
+                    <Typography variant="h5">Proponer Intercambio</Typography>
                     <SwapHorizIcon />
-                    <Typography variant="subtitle1" color="grey.400">with {opponent.first_name}</Typography>
+                    <Typography variant="subtitle1" color="grey.400">con {opponent.first_name}</Typography>
                 </Stack>
             </DialogTitle>
             <DialogContent dividers>
@@ -69,26 +69,26 @@ export default function TradeModal({
                     {/* My Offer (Left) */}
                     <Grid size={{ xs: 6 }}>
                         <Typography variant="h6" align="center" gutterBottom color="primary.main">
-                            YOU OFFER
+                            TU OFERTA
                         </Typography>
                         <Box p={2} bgcolor="background.paper" borderRadius={2} border="1px solid #ddd">
                             <Stack spacing={2}>
                                 <TextField
-                                    label="Cash Offer"
+                                    label="Oferta de Dinero"
                                     type="number"
                                     size="small"
                                     value={offerCash}
                                     onChange={(e) => setOfferCash(Math.max(0, Number(e.target.value)))}
-                                    helperText={`Max: $${me.balance}`}
+                                    helperText={`Máx: $${me.balance}`}
                                 />
 
                                 <FormControl size="small">
-                                    <InputLabel>Properties</InputLabel>
+                                    <InputLabel>Propiedades</InputLabel>
                                     <Select
                                         multiple
                                         value={offerProps}
                                         onChange={(e) => setOfferProps(typeof e.target.value === 'string' ? e.target.value.split(',') : e.target.value)}
-                                        renderValue={(selected) => selected.length + ' selected'}
+                                        renderValue={(selected) => selected.length + ' seleccionadas'}
                                     >
                                         {myProperties.map((p) => (
                                             <MenuItem key={p.property_id} value={p.property_id}>
@@ -105,26 +105,26 @@ export default function TradeModal({
                     {/* Their Offer (Right) */}
                     <Grid size={{ xs: 6 }}>
                         <Typography variant="h6" align="center" gutterBottom color="secondary.main">
-                            YOU WANT
+                            TU PEDIDO
                         </Typography>
                         <Box p={2} bgcolor="background.paper" borderRadius={2} border="1px solid #ddd">
                             <Stack spacing={2}>
                                 <TextField
-                                    label="Cash Request"
+                                    label="Dinero Solicitado"
                                     type="number"
                                     size="small"
                                     value={reqCash}
                                     onChange={(e) => setReqCash(Math.max(0, Number(e.target.value)))}
-                                    helperText={`Max: $${opponent.balance}`}
+                                    helperText={`Máx: $${opponent.balance}`}
                                 />
 
                                 <FormControl size="small">
-                                    <InputLabel>Properties</InputLabel>
+                                    <InputLabel>Propiedades</InputLabel>
                                     <Select
                                         multiple
                                         value={reqProps}
                                         onChange={(e) => setReqProps(typeof e.target.value === 'string' ? e.target.value.split(',') : e.target.value)}
-                                        renderValue={(selected) => selected.length + ' selected'}
+                                        renderValue={(selected) => selected.length + ' seleccionadas'}
                                     >
                                         {opponentProperties.map((p) => (
                                             <MenuItem key={p.property_id} value={p.property_id}>
@@ -140,7 +140,7 @@ export default function TradeModal({
                 </Grid>
             </DialogContent>
             <DialogActions sx={{ p: 2, justifyContent: 'center' }}>
-                <Button onClick={onClose} color="inherit">Cancel</Button>
+                <Button onClick={onClose} color="inherit">Cancelar</Button>
                 <Button
                     onClick={handlePropose}
                     variant="contained"
@@ -149,7 +149,7 @@ export default function TradeModal({
                     disabled={createTrade.isPending}
                     startIcon={<SwapHorizIcon />}
                 >
-                    Propose Trade
+                    Proponer Intercambio
                 </Button>
             </DialogActions>
         </Dialog>

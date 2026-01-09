@@ -18,7 +18,8 @@ import {
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'; // Added
 import ExpandLessIcon from '@mui/icons-material/ExpandLess'; // Added
 import { useParams } from 'next/navigation';
-import { useGetGame, useGetParticipants, useLeaveGame, useDeleteGame } from '@/hooks/useGame';
+import { useGetGame, useGetParticipants, useLeaveGame, useDeleteGame, useEndTurn } from '@/hooks/useGame';
+import { toast } from 'react-hot-toast';
 import { useGetTransactions, usePerformTransfer, useUndoTransaction } from '@/hooks/useTransactions';
 import ParticipantList from '@/components/ParticipantList';
 import TransactionHistory from '@/components/TransactionHistory';
@@ -27,6 +28,7 @@ import TransferDialog from '@/components/TransferDialog';
 import RouletteTool from '@/components/RouletteTool';
 import { useState, useRef, useMemo } from 'react';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance'; // Bank Icon
+import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import ExitToAppIcon from '@mui/icons-material/ExitToApp';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -72,17 +74,20 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useGetDiceHistory } from '@/hooks/useDice';
 import BankTracker from '@/components/BankTracker';
 import AIAdvisor from '@/components/AIAdvisor';
+import GlobalPropertyView from '@/components/GlobalPropertyView';
 
 import AuctionModal from '@/components/AuctionModal';
-import { Auction } from '@/hooks/useAuctions';
+import { Auction, useGetActiveAuction } from '@/hooks/useAuctions';
 import TradeModal from '@/components/TradeModal';
 import IncomingTradeDialog from '@/components/IncomingTradeDialog';
 import { Trade, useGetActiveTrades } from '@/hooks/useTrades';
 import { useGetGameProperties } from '@/hooks/useProperties';
+import InitiativeModal from '@/components/InitiativeModal';
 
 export default function GameSessionPage() {
     const { id } = useParams() as { id: string };
     const user = useAuthStore(state => state.user);
+    const token = useAuthStore(state => state.token);
     const queryClient = useQueryClient();
 
     // Auction State
@@ -97,6 +102,8 @@ export default function GameSessionPage() {
     // Movement Notification
     const [moveToast, setMoveToast] = useState<{ open: boolean; message: string }>({ open: false, message: '' });
     const [currentTurnUserId, setCurrentTurnUserId] = useState<string | null>(null);
+    const [initiativeModalOpen, setInitiativeModalOpen] = useState(false);
+    const [globalPropertiesOpen, setGlobalPropertiesOpen] = useState(false);
 
     // WebSocket Connection
     useGameSocket(id, (event: any) => {
@@ -105,8 +112,8 @@ export default function GameSessionPage() {
             queryClient.invalidateQueries({ queryKey: ['participants', id] });
 
             const spaceName = getSpaceName(p.position);
-            const pName = participants.find((old: any) => old.user_id === p.user_id)?.first_name || 'Player';
-            setMoveToast({ open: true, message: `${pName} landed on ${spaceName}` });
+            const pName = participants.find((old: any) => old.user_id === p.user_id)?.first_name || 'Jugador';
+            setMoveToast({ open: true, message: `${pName} cayó en ${spaceName}` });
         } else if (event.type === 'AuctionUpdated') {
             const auction = event.payload as Auction;
             if (auction.status === 'ACTIVE') {
@@ -136,9 +143,25 @@ export default function GameSessionPage() {
                     queryClient.invalidateQueries({ queryKey: ['participants', id] });
                 }
             }
+        } else if (event.type === 'TurnUpdated') {
+            const nextUserId = event.payload.current_turn_user_id;
+            const nextPlayer = participants.find((p: any) => p.user_id === nextUserId);
+            if (nextPlayer) {
+                toast(`Es el turno de ${nextPlayer.first_name}`, { icon: '🎲' });
+                if (nextUserId === user?.id) {
+                    new Audio('/your-turn.mp3').play().catch(() => { });
+                }
+            }
+            queryClient.invalidateQueries({ queryKey: ['game', id] });
+        } else if (event.type === 'GameUpdated') {
+            queryClient.invalidateQueries({ queryKey: ['game', id] });
+            if (event.payload.status === 'FINISHED') {
+                setViewedResults(false);
+            }
         }
     });
 
+    const { mutate: endTurn } = useEndTurn(id);
     const { data: game } = useGetGame(id);
 
     useEffect(() => {
@@ -167,6 +190,17 @@ export default function GameSessionPage() {
     }, [trades, myParticipant]);
 
     const { data: gameProperties = [] } = useGetGameProperties(id);
+    const { data: initialAuction } = useGetActiveAuction(id);
+
+    // Sync initial auction
+    useEffect(() => {
+        if (initialAuction && !activeAuction) {
+            setActiveAuction(initialAuction);
+        } else if (!initialAuction && activeAuction) {
+            // If the query says there is no active auction anymore, clear local state
+            setActiveAuction(null);
+        }
+    }, [initialAuction]);
 
     // Calculate Bank Balance for AI Context
     const bankBalance = useMemo(() => {
@@ -234,7 +268,7 @@ export default function GameSessionPage() {
     const { mutate: updateGame } = useUpdateGame();
 
     const handleDeleteGame = () => {
-        if (confirm('Are you sure you want to delete this game session? This cannot be undone.')) {
+        if (confirm('¿Estás seguro de que deseas eliminar esta sesión de juego? Esto no se puede deshacer.')) {
             deleteGame(id);
         }
     };
@@ -295,8 +329,27 @@ export default function GameSessionPage() {
     }, [game]);
 
     const handleSaveSettings = () => {
+        // If changing status to ACTIVE and it wasn't ACTIVE before, trigger initiative
+        if (editStatus === 'ACTIVE' && game?.status === 'WAITING') {
+            setSettingsOpen(false);
+            setInitiativeModalOpen(true);
+            return;
+        }
+
         updateGame({ id, data: { name: editName, status: editStatus } });
         setSettingsOpen(false);
+    };
+
+    const handleConfirmInitiative = (rolls: Record<string, number>) => {
+        updateGame({
+            id,
+            data: {
+                name: editName,
+                status: 'ACTIVE',
+                initiative_rolls: rolls
+            }
+        });
+        setInitiativeModalOpen(false);
     };
 
     const handleTransferClick = (tId: string, type: 'PAY' | 'CHARGE') => {
@@ -380,11 +433,11 @@ export default function GameSessionPage() {
                     sx={{ mb: 4, fontWeight: 'bold' }}
                     action={
                         <Button color="inherit" size="small" onClick={() => setViewedResults(false)}>
-                            Show Result Screen
+                            Mostrar Pantalla de Resultados
                         </Button>
                     }
                 >
-                    GAME OVER - This session has ended.
+                    JUEGO TERMINADO - Esta sesión ha finalizado.
                 </Alert>
             )}
 
@@ -393,7 +446,7 @@ export default function GameSessionPage() {
                 <Box>
                     <Stack direction="row" alignItems="center" spacing={2}>
                         <Button variant="outlined" startIcon={<ArrowForwardIcon style={{ transform: 'rotate(180deg)' }} />} onClick={() => window.location.href = '/history'}>
-                            Main Menu
+                            Menú Principal
                         </Button>
                         <Divider orientation="vertical" flexItem />
                         <Typography variant="h4" fontWeight="900" color="primary.main">
@@ -418,7 +471,7 @@ export default function GameSessionPage() {
                 {game?.status === 'ACTIVE' && currentTurnUserId && (
                     <Box sx={{ width: '100%', mb: 2, textAlign: 'center', p: 1, bgcolor: currentTurnUserId === user?.id ? 'success.dark' : 'background.paper', borderRadius: 1 }}>
                         <Typography variant="h5" fontWeight="bold" color={currentTurnUserId === user?.id ? 'white' : 'text.secondary'}>
-                            {currentTurnUserId === user?.id ? "IT'S YOUR TURN!" : `Waiting for ${participants.find((p: any) => p.user_id === currentTurnUserId)?.first_name || 'Player'}...`}
+                            {currentTurnUserId === user?.id ? "¡ES TU TURNO!" : `Esperando a ${participants.find((p: any) => p.user_id === currentTurnUserId)?.first_name || 'Jugador'}...`}
                         </Typography>
                     </Box>
                 )}
@@ -431,11 +484,11 @@ export default function GameSessionPage() {
                             startIcon={<SettingsIcon />}
                             onClick={() => setSettingsOpen(true)}
                         >
-                            Host Controls
+                            Controles de Host
                         </Button>
                     )}
                     <Button color="error" startIcon={<ExitToAppIcon />} onClick={() => leave()}>
-                        Leave Game
+                        Salir del Juego
                     </Button>
                 </Stack>
             </Box>
@@ -486,22 +539,38 @@ export default function GameSessionPage() {
                         </Collapse>
                     </Box>
 
+                    {/* Global Properties View */}
+                    <Box mb={4} bgcolor="rgba(255,255,255,0.02)" borderRadius={4} border="1px solid rgba(255,255,255,0.1)" overflow="hidden">
+                        <Box
+                            p={3}
+                            display="flex"
+                            alignItems="center"
+                            justifyContent="space-between"
+                            onClick={() => setGlobalPropertiesOpen(!globalPropertiesOpen)}
+                            sx={{ cursor: 'pointer', '&:hover': { bgcolor: 'rgba(255,255,255,0.05)' } }}
+                        >
+                            <Stack direction="row" alignItems="center" spacing={1}>
+                                <AccountBalanceWalletIcon color="primary" />
+                                <Typography variant="h6" fontWeight="bold" color="primary.main">
+                                    Propiedades de Jugadores
+                                </Typography>
+                            </Stack>
+                            {globalPropertiesOpen ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                        </Box>
+                        <Collapse in={globalPropertiesOpen}>
+                            <Box p={3} pt={0}>
+                                <GlobalPropertyView gameId={id} participants={participants} />
+                            </Box>
+                        </Collapse>
+                    </Box>
+
                     {/* Dice Roller */}
                     <DiceSection
                         gameId={id}
                         ref={diceSectionRef}
                         isInDebt={(myParticipant?.balance ?? 0) < 0}
                         isMyTurn={currentTurnUserId === user?.id}
-                        onEndTurn={async () => {
-                            // Call API to end turn
-                            try {
-                                await fetch(`http://localhost:3000/api/games/${id}/end-turn`, {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ userId: user?.id })
-                                });
-                            } catch (e) { console.error(e); }
-                        }}
+                        onEndTurn={() => endTurn()}
                     />
 
                     {/* Special Dice */}
@@ -609,26 +678,26 @@ export default function GameSessionPage() {
 
             {/* Host Settings Dialog */}
             <Dialog open={settingsOpen} onClose={() => setSettingsOpen(false)}>
-                <DialogTitle>Game Settings</DialogTitle>
+                <DialogTitle>Ajustes del Juego</DialogTitle>
                 <DialogContent>
                     <Stack spacing={3} sx={{ mt: 1, minWidth: 300 }}>
                         <TextField
-                            label="Game Name"
+                            label="Nombre del Juego"
                             fullWidth
                             value={editName}
                             onChange={(e) => setEditName(e.target.value)}
                         />
                         <FormControl fullWidth>
-                            <InputLabel>Status</InputLabel>
+                            <InputLabel>Estado</InputLabel>
                             <Select
                                 value={editStatus}
-                                label="Status"
+                                label="Estado"
                                 onChange={(e) => setEditStatus(e.target.value)}
                             >
-                                <MenuItem value="WAITING">WAITING (Lobby)</MenuItem>
-                                <MenuItem value="ACTIVE">ACTIVE (Playing)</MenuItem>
-                                <MenuItem value="PAUSED">PAUSED</MenuItem>
-                                <MenuItem value="FINISHED">FINISHED</MenuItem>
+                                <MenuItem value="WAITING">ESPERANDO (Lobby)</MenuItem>
+                                <MenuItem value="ACTIVE">ACTIVO (Jugando)</MenuItem>
+                                <MenuItem value="PAUSED">PAUSADO</MenuItem>
+                                <MenuItem value="FINISHED">FINALIZADO</MenuItem>
                             </Select>
                         </FormControl>
                     </Stack>
@@ -639,14 +708,21 @@ export default function GameSessionPage() {
                         color="error"
                         startIcon={<DeleteIcon />}
                     >
-                        Delete Session
+                        Eliminar Sesión
                     </Button>
                     <Box>
-                        <Button onClick={() => setSettingsOpen(false)} sx={{ mr: 1 }}>Cancel</Button>
-                        <Button onClick={handleSaveSettings} variant="contained">Save</Button>
+                        <Button onClick={() => setSettingsOpen(false)} sx={{ mr: 1 }}>Cancelar</Button>
+                        <Button onClick={handleSaveSettings} variant="contained">Guardar</Button>
                     </Box>
                 </DialogActions>
             </Dialog>
+
+            <InitiativeModal
+                open={initiativeModalOpen}
+                onClose={() => setInitiativeModalOpen(false)}
+                participants={participants}
+                onConfirm={handleConfirmInitiative}
+            />
 
             {/* Manual Card Drawer */}
             <CardDrawer
@@ -754,7 +830,7 @@ export default function GameSessionPage() {
             </Box>
 
             {/* UI Layer */}
-            {myParticipant && <PropertyActionModal gameId={game?.id || ''} myPosition={myParticipant.position} />}
+            {myParticipant && <PropertyActionModal gameId={game?.id || ''} myPosition={myParticipant.position} myParticipantId={myParticipant.id} />}
 
             <AuctionModal
                 auction={activeAuction}

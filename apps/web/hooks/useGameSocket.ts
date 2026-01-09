@@ -4,6 +4,12 @@ import { useQueryClient } from '@tanstack/react-query';
 export const useGameSocket = (gameId: string, onEvent?: (event: any) => void) => {
     const queryClient = useQueryClient();
     const socketRef = useRef<WebSocket | null>(null);
+    const onEventRef = useRef(onEvent);
+
+    // Update the ref when onEvent changes
+    useEffect(() => {
+        onEventRef.current = onEvent;
+    }, [onEvent]);
 
     useEffect(() => {
         if (!gameId) return;
@@ -27,12 +33,10 @@ export const useGameSocket = (gameId: string, onEvent?: (event: any) => void) =>
                 const message = JSON.parse(event.data);
                 console.log('WS Event:', message);
 
-                // Handle Events
+                // Handle Events and Invalidate Queries
                 if (message.type === 'TransactionCreated') {
                     queryClient.invalidateQueries({ queryKey: ['transactions', gameId] });
-                    // Also refresh participants balance
                     queryClient.invalidateQueries({ queryKey: ['participants', gameId] });
-                    // Refresh game session (for jackpot balance)
                     queryClient.invalidateQueries({ queryKey: ['game', gameId] });
                 } else if (message.type === 'DiceRolled') {
                     queryClient.invalidateQueries({ queryKey: ['dice_rolls', gameId] });
@@ -44,10 +48,24 @@ export const useGameSocket = (gameId: string, onEvent?: (event: any) => void) =>
                     queryClient.invalidateQueries({ queryKey: ['participants', gameId] });
                 } else if (message.type === 'MarketUpdated') {
                     queryClient.invalidateQueries({ queryKey: ['boveda-market', gameId] });
+                } else if (message.type === 'TurnUpdated') {
+                    queryClient.invalidateQueries({ queryKey: ['game', gameId] });
+                    queryClient.invalidateQueries({ queryKey: ['participants', gameId] });
+                } else if (message.type === 'GameUpdated') {
+                    queryClient.invalidateQueries({ queryKey: ['game', gameId] });
+                } else if (message.type === 'AuctionUpdated') {
+                    // CRITICAL: Match the key used in useGetActiveAuction
+                    queryClient.invalidateQueries({ queryKey: ['active-auction', gameId] });
+                    queryClient.invalidateQueries({ queryKey: ['gameProperties', gameId] });
+                } else if (message.type === 'TradeUpdated') {
+                    queryClient.invalidateQueries({ queryKey: ['trades', gameId] });
+                } else if (message.type === 'PropertyUpdated') {
+                    queryClient.invalidateQueries({ queryKey: ['gameProperties', gameId] });
                 }
 
-                if (onEvent) {
-                    onEvent(message);
+                // Call the latest version of onEvent to avoid stale closures
+                if (onEventRef.current) {
+                    onEventRef.current(message);
                 }
             } catch (e) {
                 console.error('Error parsing WS message:', e);
@@ -63,5 +81,5 @@ export const useGameSocket = (gameId: string, onEvent?: (event: any) => void) =>
                 socket.close();
             }
         };
-    }, [gameId, queryClient]);
+    }, [gameId, queryClient]); // onEvent is omitted because we use onEventRef
 };

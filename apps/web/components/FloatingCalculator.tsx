@@ -77,7 +77,7 @@ export default function FloatingCalculator() {
 
     return (
         <>
-            <Tooltip title="Calculator">
+            <Tooltip title="Calculadora">
                 <Fab
                     color="primary"
                     onClick={() => setOpen(true)}
@@ -89,8 +89,8 @@ export default function FloatingCalculator() {
 
             <Dialog open={open} onClose={() => setOpen(false)} maxWidth="xs" fullWidth>
                 <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Typography fontWeight="bold">Calculator</Typography>
-                    <Button onClick={() => setOpen(false)} size="small">Close</Button>
+                    <Typography fontWeight="bold">Calculadora</Typography>
+                    <Button onClick={() => setOpen(false)} size="small">Cerrar</Button>
                 </DialogTitle>
                 <DialogContent>
                     <Paper

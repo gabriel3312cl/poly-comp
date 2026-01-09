@@ -54,7 +54,6 @@ export const useGetGameProperties = (gameId: string) => {
             return res.json() as Promise<ParticipantProperty[]>;
         },
         enabled: !!gameId,
-        refetchInterval: 2000, // Sync every 2s
     });
 };
 
@@ -116,7 +115,7 @@ export const usePropertyActions = (gameId: string) => {
 
     const buyBuilding = useMutation({
         mutationFn: async ({ propertyId, userId }: { propertyId: string; userId: string }) => {
-            const res = await fetch(`${baseUrl}/properties/${propertyId}/build`, {
+            const res = await fetch(`${baseUrl}/properties/${propertyId}/buy-building`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ user_id: userId }),

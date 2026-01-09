@@ -1,11 +1,12 @@
-import { Box, Typography, Grid, Card, CardContent, CardActions, Button, Chip } from '@mui/material';
+import { Box, Typography, Grid, Card, CardContent, CardActions, Button, Chip, Divider, Stack } from '@mui/material';
 import { useGetGameProperties, usePropertyActions, ParticipantProperty, useGetAllProperties } from '@/hooks/useProperties';
 import HomeIcon from '@mui/icons-material/Home';
 import ApartmentIcon from '@mui/icons-material/Apartment';
 
 interface PropertyInventoryProps {
     gameId: string;
-    userId: string;
+    participantId: string;
+    readOnly?: boolean;
 }
 
 const GROUP_COLORS: Record<string, string> = {
@@ -21,15 +22,15 @@ const GROUP_COLORS: Record<string, string> = {
     utility: '#A9A9A9',
 };
 
-export default function PropertyInventory({ gameId, userId }: PropertyInventoryProps) {
+export default function PropertyInventory({ gameId, participantId, readOnly }: PropertyInventoryProps) {
     const { data: ownership = [] } = useGetGameProperties(gameId);
     const { data: allProperties = [] } = useGetAllProperties();
     const { mortgageProperty, unmortgageProperty } = usePropertyActions(gameId);
 
-    const myProperties = ownership.filter(p => p.participant_id === userId);
+    const myProperties = ownership.filter(p => p.participant_id === participantId);
 
     if (myProperties.length === 0) {
-        return <Typography variant="body2" color="text.secondary">No properties owned.</Typography>;
+        return <Typography variant="body2" color="text.secondary">No posees propiedades.</Typography>;
     }
 
     // Group by color? Or just list.
@@ -49,58 +50,98 @@ export default function PropertyInventory({ gameId, userId }: PropertyInventoryP
 
                             <CardContent sx={{ pb: 1 }}>
                                 <Typography variant="subtitle2" fontWeight="bold">
-                                    {pp.property_name || 'Unknown Property'}
+                                    {pp.property_name || 'Propiedad Desconocida'}
                                 </Typography>
                                 <Typography variant="caption" display="block">
-                                    Status: {pp.is_mortgaged ? 'MORTGAGED' : 'Active'}
+                                    Estado: {pp.is_mortgaged ? 'HIPOTECADA' : 'Activa'}
                                 </Typography>
 
                                 {staticProp && (
-                                    <Box mt={1} display="flex" gap={1}>
-                                        <Chip
-                                            icon={<HomeIcon fontSize="small" />}
-                                            label={pp.house_count}
-                                            size="small"
-                                            color="success"
-                                            variant="outlined"
-                                        />
-                                        <Chip
-                                            icon={<ApartmentIcon fontSize="small" />}
-                                            label={pp.hotel_count}
-                                            size="small"
-                                            color="error"
-                                            variant="outlined"
-                                        />
+                                    <Box mt={1}>
+                                        <Box display="flex" gap={1} mb={1}>
+                                            <Chip
+                                                icon={<HomeIcon fontSize="small" />}
+                                                label={pp.house_count}
+                                                size="small"
+                                                color="success"
+                                                variant={pp.house_count > 0 ? "filled" : "outlined"}
+                                            />
+                                            <Chip
+                                                icon={<ApartmentIcon fontSize="small" />}
+                                                label={pp.hotel_count}
+                                                size="small"
+                                                color="error"
+                                                variant={pp.hotel_count > 0 ? "filled" : "outlined"}
+                                            />
+                                        </Box>
+
+                                        <Divider sx={{ my: 1, opacity: 0.3 }} />
+
+                                        <Stack spacing={0.5}>
+                                            <Typography variant="caption" color="success.light" display="flex" justifyContent="space-between">
+                                                <span>Renta Actual:</span>
+                                                <span style={{ fontWeight: 'bold' }}>${calculateCurrentRent(staticProp, pp)}</span>
+                                            </Typography>
+                                            <Typography variant="caption" color="text.secondary" display="flex" justifyContent="space-between">
+                                                <span>Base:</span>
+                                                <span>${staticProp.rent_base}</span>
+                                            </Typography>
+                                            {staticProp.house_cost && (
+                                                <Typography variant="caption" color="text.secondary" display="flex" justifyContent="space-between">
+                                                    <span>Construir:</span>
+                                                    <span>${staticProp.house_cost} c/u</span>
+                                                </Typography>
+                                            )}
+                                            <Typography variant="caption" color="text.secondary" display="flex" justifyContent="space-between">
+                                                <span>Hipot.:</span>
+                                                <span>${staticProp.mortgage_value}</span>
+                                            </Typography>
+                                        </Stack>
                                     </Box>
                                 )}
                             </CardContent>
 
-                            <CardActions>
-                                {pp.is_mortgaged ? (
-                                    <Button
-                                        size="small"
-                                        color="primary"
-                                        variant="contained"
-                                        onClick={() => unmortgageProperty.mutate({ propertyId: pp.property_id, userId })}
-                                        disabled={unmortgageProperty.isPending}
-                                    >
-                                        Unmortgage (${staticProp?.unmortgage_cost})
-                                    </Button>
-                                ) : (
-                                    <Button
-                                        size="small"
-                                        color="warning"
-                                        onClick={() => mortgageProperty.mutate({ propertyId: pp.property_id, userId })}
-                                        disabled={mortgageProperty.isPending || pp.house_count > 0}
-                                    >
-                                        Mortgage (${staticProp?.mortgage_value})
-                                    </Button>
-                                )}
-                            </CardActions>
+                            {!readOnly && (
+                                <CardActions>
+                                    {pp.is_mortgaged ? (
+                                        <Button
+                                            size="small"
+                                            color="primary"
+                                            variant="contained"
+                                            fullWidth
+                                            onClick={() => unmortgageProperty.mutate({ propertyId: pp.property_id, userId: participantId })}
+                                            disabled={unmortgageProperty.isPending}
+                                        >
+                                            Deshipotecar (${staticProp?.unmortgage_cost})
+                                        </Button>
+                                    ) : (
+                                        <Button
+                                            size="small"
+                                            color="warning"
+                                            variant="outlined"
+                                            fullWidth
+                                            onClick={() => mortgageProperty.mutate({ propertyId: pp.property_id, userId: participantId })}
+                                            disabled={mortgageProperty.isPending || pp.house_count > 0}
+                                        >
+                                            Hipotecar (${staticProp?.mortgage_value})
+                                        </Button>
+                                    )}
+                                </CardActions>
+                            )}
                         </Card>
                     </Grid>
                 );
             })}
         </Grid>
     );
+}
+
+function calculateCurrentRent(p: any, pp: ParticipantProperty): number {
+    if (pp.is_mortgaged) return 0;
+    if (pp.hotel_count > 0) return Number(p.rent_hotel || 0);
+    if (pp.house_count === 4) return Number(p.rent_house_4 || 0);
+    if (pp.house_count === 3) return Number(p.rent_house_3 || 0);
+    if (pp.house_count === 2) return Number(p.rent_house_2 || 0);
+    if (pp.house_count === 1) return Number(p.rent_house_1 || 0);
+    return Number(p.rent_base || 0);
 }

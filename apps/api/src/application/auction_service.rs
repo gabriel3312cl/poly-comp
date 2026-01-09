@@ -27,6 +27,10 @@ impl AuctionService {
         Self { auction_repo, participant_repo, property_repo, transaction_service, tx }
     }
 
+    pub async fn get_active_auction(&self, game_id: Uuid) -> Result<Option<Auction>, anyhow::Error> {
+        self.auction_repo.find_active_by_game(game_id).await
+    }
+
     pub async fn start_auction(&self, game_id: Uuid, property_id: Uuid) -> Result<Auction, anyhow::Error> {
         // Check if active auction exists? Or allow multiple? 
         // Rules say "if bank auctions property..." usually one at a time.
@@ -107,9 +111,10 @@ impl AuctionService {
             ).await?;
 
             // Transfer Property
-            // We use PropertyRepository::assign_property.
-            // But we need to construct ParticipantProperty object.
-             let pp = crate::domain::entities::ParticipantProperty {
+            // Ensure any stale ownership is removed first to avoid UNIQUE constraint violations
+            self.property_repo.delete_ownership(auction.game_id, auction.property_id).await?;
+
+            let pp = crate::domain::entities::ParticipantProperty {
                 id: Uuid::new_v4(),
                 game_id: auction.game_id,
                 participant_id: winner_id,
@@ -117,7 +122,7 @@ impl AuctionService {
                 is_mortgaged: false,
                 house_count: 0,
                 hotel_count: 0,
-                property_name: None, // Filled by join query typically
+                property_name: None,
                 group_color: None,
             };
             self.property_repo.assign_property(pp).await?;

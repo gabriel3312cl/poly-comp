@@ -1,4 +1,7 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import axios from 'axios';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
 export interface Auction {
     id: string;
@@ -13,56 +16,45 @@ export interface Auction {
 
 export const useAuctionActions = (gameId: string) => {
     const queryClient = useQueryClient();
-    const baseUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/games/${gameId}`;
+    const baseUrl = `${API_URL}/games/${gameId}`;
 
     const startAuction = useMutation({
         mutationFn: async ({ propertyId }: { propertyId: string }) => {
-            const res = await fetch(`${baseUrl}/auctions`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ property_id: propertyId }),
-            });
-            if (!res.ok) {
-                const err = await res.text();
-                throw new Error(err || 'Failed to start auction');
-            }
-            return res.json() as Promise<Auction>;
+            const { data } = await axios.post<Auction>(`${baseUrl}/auctions`, { property_id: propertyId });
+            return data;
         }
     });
 
     const placeBid = useMutation({
         mutationFn: async ({ auctionId, userId, amount }: { auctionId: string; userId: string; amount: number }) => {
-            const res = await fetch(`${baseUrl}/auctions/${auctionId}/bid`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ bidder_user_id: userId, amount }),
-            });
-            if (!res.ok) {
-                const err = await res.text();
-                throw new Error(err || 'Failed to place bid');
-            }
-            return res.json() as Promise<Auction>;
+            const { data } = await axios.post<Auction>(`${baseUrl}/auctions/${auctionId}/bid`, { bidder_user_id: userId, amount });
+            return data;
         }
     });
 
     const endAuction = useMutation({
         mutationFn: async ({ auctionId }: { auctionId: string }) => {
-            const res = await fetch(`${baseUrl}/auctions/${auctionId}/end`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-            });
-            if (!res.ok) {
-                const err = await res.text();
-                throw new Error(err || 'Failed to end auction');
-            }
-            return res.json() as Promise<Auction>;
+            const { data } = await axios.post<Auction>(`${baseUrl}/auctions/${auctionId}/end`);
+            return data;
         },
         onSuccess: () => {
             // Invalidate ownership to see the new owner
             queryClient.invalidateQueries({ queryKey: ['gameProperties', gameId] });
             queryClient.invalidateQueries({ queryKey: ['participants', gameId] });
+            queryClient.invalidateQueries({ queryKey: ['active-auction', gameId] });
         }
     });
 
     return { startAuction, placeBid, endAuction };
+};
+
+export const useGetActiveAuction = (gameId: string) => {
+    return useQuery({
+        queryKey: ['active-auction', gameId],
+        queryFn: async () => {
+            const { data } = await axios.get<Auction | null>(`${API_URL}/games/${gameId}/auctions`);
+            return data;
+        },
+        enabled: !!gameId,
+    });
 };

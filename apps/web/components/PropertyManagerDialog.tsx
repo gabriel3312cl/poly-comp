@@ -62,14 +62,14 @@ export default function PropertyManagerDialog({ open, onClose, gameId, userId, m
     return (
         <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
             <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography variant="h6" fontWeight="bold">Manage Buildings</Typography>
+                <Typography variant="h6" component="div" fontWeight="bold">Gestionar Edificios</Typography>
                 <IconButton onClick={onClose} size="small"><CloseIcon /></IconButton>
             </DialogTitle>
             <DialogContent dividers>
                 {buildableProperties.length === 0 ? (
                     <Box textAlign="center" py={4}>
                         <Typography color="text.secondary">
-                            You don't have any Monopolies yet. Collect all properties of a color group to start building!
+                            Aún no tienes monopolios. ¡Colecciona todas las propiedades de un grupo de color para empezar a construir!
                         </Typography>
                     </Box>
                 ) : (
@@ -108,36 +108,62 @@ export default function PropertyManagerDialog({ open, onClose, gameId, userId, m
 
                                     <Stack direction="row" justifyContent="flex-end" spacing={1} alignItems="center">
                                         <Typography variant="caption" color="text.secondary" mr={1}>
-                                            {isMaxed ? 'Maxed Out' : `Next: $${nextCost}`}
+                                            {isMaxed ? 'Máximo alcanzado' : `Siguiente: $${nextCost}`}
                                         </Typography>
 
-                                        <Tooltip title="Sell Building (Half Price)">
-                                            <span>
-                                                <IconButton
-                                                    size="small"
-                                                    color="error"
-                                                    onClick={() => handleSell(mp.property_id)}
-                                                    disabled={mp.house_count === 0 && mp.hotel_count === 0}
-                                                >
-                                                    <RemoveIcon />
-                                                </IconButton>
-                                            </span>
-                                        </Tooltip>
+                                        {/* Helper logic for even building */}
+                                        {(() => {
+                                            const groupColor = propDef.group_color;
+                                            const groupOwned = myProperties.filter(mp2 => {
+                                                const p2 = allProperties.find(ap => ap.id === mp2.property_id);
+                                                return p2?.group_color === groupColor;
+                                            });
 
-                                        <Tooltip title={isAt4Houses ? "Upgrade to Hotel" : "Buy House"}>
-                                            <span>
-                                                <IconButton
-                                                    size="small"
-                                                    color="success"
-                                                    onClick={() => handleBuy(mp.property_id)}
-                                                    disabled={isMaxed || mp.is_mortgaged}
-                                                    sx={{ border: '1px solid', borderColor: 'success.main' }}
-                                                >
-                                                    {isAt4Houses ? <ApartmentIcon /> : <HomeIcon />}
-                                                    <AddIcon fontSize="small" sx={{ ml: 0.5, width: 14, height: 14 }} />
-                                                </IconButton>
-                                            </span>
-                                        </Tooltip>
+                                            const buildingCounts = groupOwned.map(mp2 => mp2.hotel_count > 0 ? 5 : mp2.house_count);
+                                            const minBuildings = Math.min(...buildingCounts);
+                                            const maxBuildings = Math.max(...buildingCounts);
+                                            const currentBuildings = mp.hotel_count > 0 ? 5 : mp.house_count;
+
+                                            // Rules:
+                                            // 1. Cannot build if any in group is mortgaged
+                                            const anyMortgaged = groupOwned.some(mp2 => mp2.is_mortgaged);
+                                            // 2. Build evenly: can only build if current <= min
+                                            const canBuildEvenly = currentBuildings <= minBuildings;
+                                            // 3. Sell evenly: can only sell if current >= max
+                                            const canSellEvenly = currentBuildings >= maxBuildings;
+
+                                            return (
+                                                <>
+                                                    <Tooltip title={anyMortgaged ? "No puedes vender edificios si hay propiedades hipotecadas en el grupo" : !canSellEvenly ? "Debes vender de forma uniforme" : "Vender Edificio (Mitad de precio)"}>
+                                                        <span>
+                                                            <IconButton
+                                                                size="small"
+                                                                color="error"
+                                                                onClick={() => handleSell(mp.property_id)}
+                                                                disabled={sellBuilding.isPending || (mp.house_count === 0 && mp.hotel_count === 0) || !canSellEvenly || anyMortgaged}
+                                                            >
+                                                                <RemoveIcon />
+                                                            </IconButton>
+                                                        </span>
+                                                    </Tooltip>
+
+                                                    <Tooltip title={anyMortgaged ? "No puedes construir si hay propiedades hipotecadas en el grupo" : isMaxed ? "Máximo alcanzado" : !canBuildEvenly ? "Debes construir de forma uniforme" : isAt4Houses ? "Mejorar a Hotel" : "Comprar Casa"}>
+                                                        <span>
+                                                            <IconButton
+                                                                size="small"
+                                                                color="success"
+                                                                onClick={() => handleBuy(mp.property_id)}
+                                                                disabled={buyBuilding.isPending || isMaxed || anyMortgaged || !canBuildEvenly}
+                                                                sx={{ border: '1px solid', borderColor: 'success.main' }}
+                                                            >
+                                                                {isAt4Houses ? <ApartmentIcon /> : <HomeIcon />}
+                                                                <AddIcon fontSize="small" sx={{ ml: 0.5, width: 14, height: 14 }} />
+                                                            </IconButton>
+                                                        </span>
+                                                    </Tooltip>
+                                                </>
+                                            );
+                                        })()}
                                     </Stack>
                                 </Box>
                             );
@@ -146,7 +172,7 @@ export default function PropertyManagerDialog({ open, onClose, gameId, userId, m
                 )}
             </DialogContent>
             <DialogActions>
-                <Button onClick={onClose}>Close</Button>
+                <Button onClick={onClose}>Cerrar</Button>
             </DialogActions>
         </Dialog>
     );

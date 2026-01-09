@@ -133,13 +133,17 @@ async fn main() -> anyhow::Result<()> {
         .route("/games/:id/properties/:prop_id/buy", axum::routing::post(web::handlers::property::buy_property))
         .route("/games/:id/properties/:prop_id/mortgage", axum::routing::post(web::handlers::property::mortgage_property))
         .route("/games/:id/properties/:prop_id/unmortgage", axum::routing::post(web::handlers::property::unmortgage_property))
+        .route("/games/:id/properties/:prop_id/buy-building", axum::routing::post(web::handlers::property::buy_building))
+        .route("/games/:id/properties/:prop_id/sell-building", axum::routing::post(web::handlers::property::sell_building))
         .route("/properties", axum::routing::get(web::handlers::property::get_all_properties))
         // Auction Routes
-        .route("/games/:id/auctions", axum::routing::post(web::handlers::auction::start_auction)) // Get active?
+        .route("/games/:id/auctions", axum::routing::post(web::handlers::auction::start_auction)
+            .get(web::handlers::auction::get_active_auction))
         .route("/games/:id/auctions/:auction_id/bid", axum::routing::post(web::handlers::auction::place_bid))
         .route("/games/:id/auctions/:auction_id/end", axum::routing::post(web::handlers::auction::end_auction))
         // Trade Routes
-        .route("/games/:id/trades", axum::routing::post(web::handlers::trade::create_trade))
+        .route("/games/:id/trades", axum::routing::get(web::handlers::trade::get_trades)
+            .post(web::handlers::trade::create_trade))
         .route("/games/:id/trades/:trade_id/accept", axum::routing::post(web::handlers::trade::accept_trade))
         .route("/games/:id/trades/:trade_id/reject", axum::routing::post(web::handlers::trade::reject_trade))
         .layer(tower_http::trace::TraceLayer::new_for_http())

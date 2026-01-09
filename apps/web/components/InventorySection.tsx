@@ -80,9 +80,9 @@ export default function InventorySection({ gameId, myParticipantId }: InventoryS
                     setSelectedCardId(null);
                     // Show feedback?
                     if (card.title === "De nuevo" || card.title === "Gira la ruleta") {
-                        alert("You can now spin the roulette again!");
+                        alert("¡Ahora puedes girar la ruleta de nuevo!");
                     } else if (card.title === "Gran Premio") {
-                        alert("Congratulations! Claim the Jackpot manually from the center.");
+                        alert("¡Felicidades! Reclama el Jackpot manualmente desde el centro.");
                     }
                 }
             });
@@ -104,14 +104,14 @@ export default function InventorySection({ gameId, myParticipantId }: InventoryS
     // Check for Dado de Compra
     const hasDadoDeCompra = inventory?.some((c: any) => c.title === "Dado de Compra") ?? false;
 
-    if (inventoryLoading) return <Typography variant="caption">Loading cards...</Typography>;
+    if (inventoryLoading) return <Typography variant="caption">Cargando cartas...</Typography>;
 
     return (
         <Box sx={{ p: 2, overflowY: 'auto', maxHeight: '100%' }}>
 
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
                 <Typography variant="h6">
-                    Properties
+                    Propiedades
                 </Typography>
                 <Button
                     startIcon={<DomainIcon />}
@@ -120,27 +120,27 @@ export default function InventorySection({ gameId, myParticipantId }: InventoryS
                     color="warning"
                     onClick={() => setManagerOpen(true)}
                 >
-                    Manage Buildings
+                    Gestionar Edificios
                 </Button>
             </Box>
 
-            {user && <PropertyInventory gameId={gameId} userId={user.id} />}
+            {myParticipantId && <PropertyInventory gameId={gameId} participantId={myParticipantId} />}
 
             <Divider sx={{ my: 3 }} />
 
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
                 <Typography variant="h6">
-                    My Cards ({inventory?.length || 0})
+                    Mis Cartas ({inventory?.length || 0})
                 </Typography>
                 <Button variant="outlined" size="small" onClick={() => setGlobalModalOpen(true)}>
-                    View All {hasDadoDeCompra && "(Special Action)"}
+                    Ver Todas {hasDadoDeCompra && "(Acción Especial)"}
                 </Button>
             </Box>
 
             {!inventory || inventory.length === 0 ? (
                 <Box p={2} textAlign="center">
                     <Typography variant="body2" color="text.secondary">
-                        You have no saved cards.
+                        No tienes cartas guardadas.
                     </Typography>
                 </Box>
             ) : (
@@ -170,33 +170,33 @@ export default function InventorySection({ gameId, myParticipantId }: InventoryS
 
             {/* Use Confirmation Dialog */}
             <Dialog open={!!selectedCardId} onClose={() => setSelectedCardId(null)}>
-                <DialogTitle>Use Card?</DialogTitle>
+                <DialogTitle>¿Usar carta?</DialogTitle>
                 <DialogContent>
                     <Typography>
-                        Are you sure you want to use this card?
+                        ¿Estás seguro de que quieres usar esta carta?
                     </Typography>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setSelectedCardId(null)}>Cancel</Button>
+                    <Button onClick={() => setSelectedCardId(null)}>Cancelar</Button>
                     <Button onClick={handleConfirmUse} variant="contained" color="success">
-                        Confirm Use
+                        Confirmar Uso
                     </Button>
                 </DialogActions>
             </Dialog>
 
             {/* Discard Confirmation Dialog */}
             <Dialog open={!!confirmDiscardId} onClose={() => setConfirmDiscardId(null)}>
-                <DialogTitle>Discard Card?</DialogTitle>
+                <DialogTitle>¿Descartar carta?</DialogTitle>
                 <DialogContent>
                     <Typography>
-                        Are you sure you want to discard this card?
-                        This action cannot be undone.
+                        ¿Estás seguro de que quieres descartar esta carta?
+                        Esta acción no se puede deshacer.
                     </Typography>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setConfirmDiscardId(null)}>Cancel</Button>
+                    <Button onClick={() => setConfirmDiscardId(null)}>Cancelar</Button>
                     <Button onClick={handleConfirmDiscard} variant="contained" color="error">
-                        Discard
+                        Descartar
                     </Button>
                 </DialogActions>
             </Dialog>

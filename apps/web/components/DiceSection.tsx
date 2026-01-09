@@ -31,6 +31,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { useRollDice, useGetDiceHistory, DiceHistoryItem } from '@/hooks/useDice';
 import { parseServerDate } from '@/utils/formatters';
+import { motion, AnimatePresence } from 'framer-motion';
 import ConfirmDialog from './ConfirmDialog';
 
 interface DiceSectionProps {
@@ -51,6 +52,7 @@ const DiceSection = forwardRef<DiceSectionHandle, DiceSectionProps>(({ gameId, i
     const [showHistory, setShowHistory] = useState<boolean>(false);
     const [autoSalary, setAutoSalary] = useState<boolean>(true);
     const [notification, setNotification] = useState<{ open: boolean; message: string }>({ open: false, message: '' });
+    const [hasRolledThisTurn, setHasRolledThisTurn] = useState<boolean>(false);
 
     const { mutate: roll, isPending: rolling, data: lastRoll } = useRollDice(gameId);
     const { data: history = [] } = useGetDiceHistory(gameId);
@@ -61,12 +63,19 @@ const DiceSection = forwardRef<DiceSectionHandle, DiceSectionProps>(({ gameId, i
     useImperativeHandle(ref, () => ({
         openRollDialog: () => {
             if (isInDebt) {
-                setNotification({ open: true, message: 'You cannot roll while in debt!' });
+                setNotification({ open: true, message: '¡No puedes tirar mientras estés en deuda!' });
                 return;
             }
             setConfirmRollOpen(true);
         }
     }));
+
+    // Reset roll state when it becomes my turn
+    useEffect(() => {
+        if (isMyTurn) {
+            setHasRolledThisTurn(false);
+        }
+    }, [isMyTurn]);
 
     // Effect to play sound on new roll
     useEffect(() => {
@@ -75,11 +84,10 @@ const DiceSection = forwardRef<DiceSectionHandle, DiceSectionProps>(({ gameId, i
             const isDoubles = lastRoll.results.every(val => val === lastRoll.results[0]) && lastRoll.results.length > 1;
 
             if (isDoubles) {
+                setHasRolledThisTurn(false); // Allow another roll
                 new Audio('/doubles.mp3').play().catch(e => console.error('Error playing doubles sound:', e));
             } else {
-                // Standard dice sound (or maybe keep it on button click?)
-                // User requested doubles sound specifically for doubles.
-                // The standard dice sound was already there on click.
+                // ...
             }
         }
     }, [lastRoll]);
@@ -87,12 +95,12 @@ const DiceSection = forwardRef<DiceSectionHandle, DiceSectionProps>(({ gameId, i
     const handleRollClick = () => {
         // If isMyTurn is explicitly provided (not undefined), enforce it
         if (isMyTurn === false) {
-            setNotification({ open: true, message: 'It is not your turn!' });
+            setNotification({ open: true, message: '¡No es tu turno!' });
             return;
         }
 
         if (isInDebt) {
-            setNotification({ open: true, message: 'You cannot roll while in debt!' });
+            setNotification({ open: true, message: '¡No puedes tirar mientras estés en deuda!' });
             return;
         }
         setConfirmRollOpen(true);
@@ -104,6 +112,7 @@ const DiceSection = forwardRef<DiceSectionHandle, DiceSectionProps>(({ gameId, i
         audio.play().catch(err => console.error('Failed to play dice sound:', err));
 
         roll({ sides, count });
+        setHasRolledThisTurn(true);
         setConfirmRollOpen(false);
     };
 
@@ -119,14 +128,14 @@ const DiceSection = forwardRef<DiceSectionHandle, DiceSectionProps>(({ gameId, i
                 <Stack direction="row" alignItems="center" justifyContent="space-between" mb={2}>
                     <Stack direction="row" alignItems="center" gap={1}>
                         <CasinoIcon color="secondary" />
-                        <Typography variant="h6" fontWeight="bold">Dice Roller</Typography>
+                        <Typography variant="h6" fontWeight="bold">Lanzador de Dados</Typography>
                     </Stack>
                     <Button
                         size="small"
                         onClick={() => setShowConfig(!showConfig)}
                         color="inherit"
                     >
-                        {showConfig ? 'Hide Config' : 'Configure'}
+                        {showConfig ? 'Ocultar Config' : 'Configurar'}
                     </Button>
                 </Stack>
 
@@ -135,7 +144,7 @@ const DiceSection = forwardRef<DiceSectionHandle, DiceSectionProps>(({ gameId, i
                     <Box flex={1}>
                         <Collapse in={showConfig}>
                             <Box mb={3} p={2} border="1px dashed rgba(255,255,255,0.2)" borderRadius={2}>
-                                <Typography gutterBottom variant="caption" color="text.secondary">Dice Type</Typography>
+                                <Typography gutterBottom variant="caption" color="text.secondary">Tipo de Dado</Typography>
                                 <ToggleButtonGroup
                                     value={sides}
                                     exclusive
@@ -150,7 +159,7 @@ const DiceSection = forwardRef<DiceSectionHandle, DiceSectionProps>(({ gameId, i
                                     <ToggleButton value={24}>D24</ToggleButton>
                                 </ToggleButtonGroup>
 
-                                <Typography gutterBottom variant="caption" color="text.secondary">Count: {count}</Typography>
+                                <Typography gutterBottom variant="caption" color="text.secondary">Cantidad: {count}</Typography>
                                 <Slider
                                     value={count}
                                     onChange={(_, val) => setCount(val as number)}
@@ -164,22 +173,37 @@ const DiceSection = forwardRef<DiceSectionHandle, DiceSectionProps>(({ gameId, i
                             </Box>
                         </Collapse>
 
-                        <Tooltip title={isInDebt ? "Cannot roll while in debt" : (isMyTurn === false ? "Not your turn" : "")}>
+                        <Tooltip title={isInDebt ? "No puedes tirar mientras estés en deuda" : (isMyTurn === false ? "No es tu turno" : "")}>
                             <Stack spacing={2}>
-                                <Button
-                                    variant="contained"
-                                    fullWidth
-                                    size="large"
-                                    onClick={handleRollClick}
-                                    disabled={rolling || isInDebt || isMyTurn === false}
-                                    startIcon={<CasinoIcon />}
-                                    sx={{
-                                        background: 'linear-gradient(45deg, #FE6B8B 30%, #FF8E53 90%)',
-                                        boxShadow: '0 3px 5px 2px rgba(255, 105, 135, .3)',
-                                    }}
+                                <motion.div
+                                    whileHover={{ scale: 1.02 }}
+                                    whileTap={{ scale: 0.95 }}
                                 >
-                                    {rolling ? 'Rolling...' : 'ROLL DICE'}
-                                </Button>
+                                    <Button
+                                        variant="contained"
+                                        fullWidth
+                                        size="large"
+                                        onClick={handleRollClick}
+                                        disabled={rolling || isInDebt || isMyTurn === false || (hasRolledThisTurn && (!lastRoll || !lastRoll.results.every(val => val === lastRoll.results[0]) || lastRoll.results.length <= 1))}
+                                        startIcon={rolling ? null : <CasinoIcon />}
+                                        sx={{
+                                            background: 'linear-gradient(45deg, #FE6B8B 30%, #FF8E53 90%)',
+                                            boxShadow: '0 3px 5px 2px rgba(255, 105, 135, .3)',
+                                            height: 56,
+                                            position: 'relative',
+                                            overflow: 'hidden'
+                                        }}
+                                    >
+                                        {rolling ? (
+                                            <motion.div
+                                                animate={{ rotate: 360 }}
+                                                transition={{ repeat: Infinity, duration: 0.5, ease: 'linear' }}
+                                            >
+                                                <CasinoIcon />
+                                            </motion.div>
+                                        ) : 'LANZAR DADOS'}
+                                    </Button>
+                                </motion.div>
 
                                 {onEndTurn && (
                                     <Button
@@ -189,7 +213,7 @@ const DiceSection = forwardRef<DiceSectionHandle, DiceSectionProps>(({ gameId, i
                                         onClick={onEndTurn}
                                         disabled={!isMyTurn || rolling}
                                     >
-                                        End Turn
+                                        Finalizar Turno
                                     </Button>
                                 )}
                             </Stack>
@@ -204,7 +228,7 @@ const DiceSection = forwardRef<DiceSectionHandle, DiceSectionProps>(({ gameId, i
                                         color="success"
                                     />
                                 }
-                                label={<Typography variant="caption" color="text.secondary">Auto-pay Salary ($200) on Go</Typography>}
+                                label={<Typography variant="caption" color="text.secondary">Pagar Salario Automático ($200) al pasar por Salida</Typography>}
                             />
                         </Box>
 
@@ -223,14 +247,50 @@ const DiceSection = forwardRef<DiceSectionHandle, DiceSectionProps>(({ gameId, i
                         {/* Current Result Display */}
                         {lastRoll && (
                             <Box mt={3} p={2} bgcolor="background.default" borderRadius={2} textAlign="center" border="1px dashed #444">
-                                <Typography variant="overline" color="text.secondary">Your Last Roll</Typography>
-                                <Typography variant="h3" fontWeight="900" color="primary.main">
-                                    {lastRoll.total}
-                                </Typography>
+                                <Typography variant="overline" color="text.secondary">Tu último lanzamiento</Typography>
+                                <motion.div
+                                    key={`total-${lastRoll.id}`}
+                                    initial={{ scale: 0 }}
+                                    animate={{ scale: 1 }}
+                                    transition={{ type: 'spring', stiffness: 200, damping: 10 }}
+                                >
+                                    <Typography variant="h3" fontWeight="900" color="primary.main">
+                                        {lastRoll.total}
+                                    </Typography>
+                                </motion.div>
                                 <Stack direction="row" gap={1} justifyContent="center" mt={1}>
-                                    {lastRoll.results.map((r, i) => (
-                                        <Chip key={i} label={r} size="small" variant="outlined" />
-                                    ))}
+                                    <AnimatePresence>
+                                        {lastRoll.results.map((r, i) => (
+                                            <motion.div
+                                                key={`${lastRoll.id}-${i}`}
+                                                initial={{ scale: 0, rotate: -180, y: 20 }}
+                                                animate={{ scale: 1, rotate: 0, y: 0 }}
+                                                transition={{
+                                                    type: 'spring',
+                                                    stiffness: 260,
+                                                    damping: 20,
+                                                    delay: i * 0.1
+                                                }}
+                                            >
+                                                <Paper
+                                                    elevation={4}
+                                                    sx={{
+                                                        width: 40,
+                                                        height: 40,
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        bgcolor: 'primary.main',
+                                                        color: 'white',
+                                                        borderRadius: 2,
+                                                        border: '2px solid rgba(255,255,255,0.2)'
+                                                    }}
+                                                >
+                                                    <Typography variant="h6" fontWeight="bold">{r}</Typography>
+                                                </Paper>
+                                            </motion.div>
+                                        ))}
+                                    </AnimatePresence>
                                 </Stack>
                             </Box>
                         )}
@@ -249,13 +309,13 @@ const DiceSection = forwardRef<DiceSectionHandle, DiceSectionProps>(({ gameId, i
                             sx={{ cursor: 'pointer', userSelect: 'none' }}
                         >
                             <HistoryIcon fontSize="small" color="disabled" />
-                            <Typography variant="caption" color="text.secondary">Recent History</Typography>
+                            <Typography variant="caption" color="text.secondary">Historial Reciente</Typography>
                             {showHistory ? <ExpandLessIcon fontSize="small" color="disabled" /> : <ExpandMoreIcon fontSize="small" color="disabled" />}
                         </Stack>
                         <Collapse in={showHistory}>
                             <Box maxHeight={300} overflow="auto">
                                 <List dense>
-                                    {history.length === 0 && <Typography variant="body2" color="text.disabled">No rolls yet.</Typography>}
+                                    {history.length === 0 && <Typography variant="body2" color="text.disabled">Sin lanzamientos aún.</Typography>}
                                     {history.map((item, idx) => {
                                         const ts = parseServerDate(item.roll.created_at);
                                         const timeStr = ts ? new Date(ts).toLocaleTimeString() : '';
@@ -291,11 +351,11 @@ const DiceSection = forwardRef<DiceSectionHandle, DiceSectionProps>(({ gameId, i
 
             <ConfirmDialog
                 open={confirmRollOpen}
-                title="Roll Dice?"
-                description={`Are you sure you want to roll ${count}d${sides}?`}
+                title="¿Lanzar Dados?"
+                description={`¿Estás seguro de que quieres lanzar ${count}d${sides}?`}
                 onConfirm={handleConfirmRoll}
                 onClose={() => setConfirmRollOpen(false)}
-                confirmText="Roll"
+                confirmText="Lanzar"
             />
         </Card>
     );

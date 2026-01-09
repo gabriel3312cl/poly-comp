@@ -1,4 +1,7 @@
 import { Box, Paper, Typography, Avatar, Zoom, ToggleButton, ToggleButtonGroup, Card, CardContent, Grid, Divider, IconButton } from '@mui/material';
+import HomeIcon from '@mui/icons-material/Home';
+import ApartmentIcon from '@mui/icons-material/Apartment';
+import { motion, AnimatePresence } from 'framer-motion';
 import { BOARD_SPACES } from '@/utils/boardSpaces';
 import { useAuthStore } from '@/store/authStore';
 import { DiceHistoryItem } from '@/hooks/useDice';
@@ -272,34 +275,81 @@ export default function GameBoard({ participants, diceHistory = [] }: GameBoardP
                             const pos = getGridPosition(space.index);
                             const overlayColor = getSpaceColorOverlay(space.index);
                             const isSelected = selectedSpaceIndex === space.index;
-                            const occupants = participants.filter(p => p.position === space.index);
                             const ownerColor = getOwnerColor(space.index);
 
+                            // Find specific ownership data for buildings
+                            const propDef = allProperties.find(p => p.board_position === space.index);
+                            const ownedData = propDef ? ownership.find(o => o.property_id === propDef.id) : null;
+
                             return (
-                                <Box
+                                <motion.div
                                     key={space.index}
+                                    whileHover={{
+                                        scale: 1.05,
+                                        zIndex: 50,
+                                        boxShadow: "0px 10px 20px rgba(0,0,0,0.3)"
+                                    }}
+                                    transition={{ type: "spring", stiffness: 400, damping: 25 }}
                                     onClick={() => setSelectedSpaceIndex(space.index)}
-                                    sx={{
+                                    style={{
                                         ...pos,
-                                        bgcolor: 'white',
+                                        backgroundColor: 'white',
                                         // Highlight owner with thick border
                                         border: isSelected ? '3px solid #FFD700' : (ownerColor ? `3px solid ${ownerColor}` : '1px solid black'),
-                                        //@ts-ignore
                                         borderColor: isSelected ? '#FFD700' : (ownerColor || 'rgba(0,0,0,0.12)'),
                                         position: 'relative',
                                         display: 'flex',
                                         flexDirection: 'column',
                                         alignItems: 'center',
                                         justifyContent: 'space-between',
-                                        p: 0.2,
+                                        padding: '1.6px', // 0.2rem approx
                                         cursor: 'pointer',
-                                        transition: 'all 0.2s',
-                                        '&:hover': { zIndex: 10, boxShadow: 6, transform: 'scale(1.1)' }
                                     }}
                                 >
                                     <Box sx={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', bgcolor: overlayColor, zIndex: 5, pointerEvents: 'none' }} />
 
                                     {space.color && <Box sx={{ width: '100%', height: space.type === 'corner' ? 0 : '18%', bgcolor: space.color, borderBottom: '1px solid black' }} />}
+
+                                    {/* Buildings View */}
+                                    {ownedData && (ownedData.house_count > 0 || ownedData.hotel_count > 0) && (
+                                        <Box sx={{
+                                            position: 'absolute',
+                                            top: space.type === 'corner' ? '10%' : '19%',
+                                            width: '100%',
+                                            display: 'flex',
+                                            justifyContent: 'center',
+                                            alignItems: 'center',
+                                            gap: 0.2,
+                                            zIndex: 8,
+                                            px: 0.5
+                                        }}>
+                                            <AnimatePresence mode="popLayout">
+                                                {ownedData.hotel_count > 0 ? (
+                                                    <motion.div
+                                                        key="hotel"
+                                                        initial={{ scale: 0, rotate: -45 }}
+                                                        animate={{ scale: 1, rotate: 0 }}
+                                                        exit={{ scale: 0, opacity: 0 }}
+                                                        transition={{ type: 'spring', stiffness: 300, damping: 15 }}
+                                                    >
+                                                        <ApartmentIcon sx={{ color: '#d32f2f', fontSize: '1.2rem', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.5))' }} />
+                                                    </motion.div>
+                                                ) : (
+                                                    [...Array(ownedData.house_count)].map((_, i) => (
+                                                        <motion.div
+                                                            key={`house-${i}`}
+                                                            initial={{ scale: 0, y: -10 }}
+                                                            animate={{ scale: 1, y: 0 }}
+                                                            exit={{ scale: 0, opacity: 0 }}
+                                                            transition={{ type: 'spring', stiffness: 400, damping: 20, delay: i * 0.05 }}
+                                                        >
+                                                            <HomeIcon sx={{ color: '#2e7d32', fontSize: '0.8rem', filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.4))' }} />
+                                                        </motion.div>
+                                                    ))
+                                                )}
+                                            </AnimatePresence>
+                                        </Box>
+                                    )}
 
                                     {/* Owner Badge (if owned by me/others) */}
                                     {ownerColor && (
@@ -326,29 +376,65 @@ export default function GameBoard({ participants, diceHistory = [] }: GameBoardP
                                         {space.type === 'chance' && <Typography variant="caption" color="warning.main" fontWeight="bold">?</Typography>}
                                         {space.type === 'chest' && <Typography variant="caption" color="info.main" fontWeight="bold">📦</Typography>}
                                     </Box>
+                                </motion.div>
+                            );
+                        })}
 
-                                    {occupants.length > 0 && (
-                                        <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', position: 'absolute', bottom: 1, width: '100%', zIndex: 7 }}>
-                                            {occupants.map((p, i) => (
+                        {/* Player Tokens Layer (Fluid Movement) */}
+                        {Object.entries(
+                            participants.reduce((acc, p) => {
+                                if (!acc[p.position]) acc[p.position] = [];
+                                acc[p.position].push(p);
+                                return acc;
+                            }, {} as Record<number, typeof participants>)
+                        ).map(([posStr, occupants]) => {
+                            const pIndex = parseInt(posStr);
+                            const pos = getGridPosition(pIndex);
+                            return (
+                                <motion.div
+                                    key={`tokens-${posStr}`}
+                                    layout
+                                    transition={{ type: 'spring', stiffness: 200, damping: 25 }}
+                                    style={{
+                                        ...pos,
+                                        zIndex: 100,
+                                        display: 'flex',
+                                        flexWrap: 'wrap',
+                                        justifyContent: 'center',
+                                        alignContent: 'center',
+                                        pointerEvents: 'none',
+                                        gap: -12 // Cluster tokens
+                                    }}
+                                >
+                                    <AnimatePresence>
+                                        {occupants.map((p, i) => (
+                                            <motion.div
+                                                key={p.id}
+                                                layout
+                                                initial={{ scale: 0, opacity: 0 }}
+                                                animate={{ scale: 1, opacity: 1 }}
+                                                exit={{ scale: 0, opacity: 0 }}
+                                                transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                                            >
                                                 <Avatar
-                                                    key={p.id}
                                                     src={p.avatar_url}
                                                     sx={{
-                                                        width: 28,
-                                                        height: 28,
+                                                        width: 32,
+                                                        height: 32,
                                                         border: '2px solid white',
                                                         fontSize: '0.8rem',
-                                                        ml: i > 0 ? -1.5 : 0,
                                                         bgcolor: p.user_id === user?.id ? 'primary.main' : 'secondary.main',
-                                                        boxShadow: 3
+                                                        boxShadow: 8,
+                                                        position: 'relative',
+                                                        zIndex: 100 + i
                                                     }}
                                                 >
                                                     {p.first_name[0]}
                                                 </Avatar>
-                                            ))}
-                                        </Box>
-                                    )}
-                                </Box>
+                                            </motion.div>
+                                        ))}
+                                    </AnimatePresence>
+                                </motion.div>
                             );
                         })}
                     </Box>

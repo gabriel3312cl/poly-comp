@@ -96,4 +96,10 @@ impl TradeService {
         let _ = self.tx.send(GameEvent::TradeUpdated(updated.clone()));
         Ok(updated)
     }
+
+    pub async fn get_active_trades(&self, game_id: Uuid) -> Result<Vec<Trade>, anyhow::Error> {
+        let trades = self.trade_repo.find_by_game(game_id).await?;
+        let pending: Vec<Trade> = trades.into_iter().filter(|t| t.status == "PENDING").collect();
+        Ok(pending)
+    }
 }

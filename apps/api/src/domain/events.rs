@@ -15,6 +15,7 @@ pub enum GameEvent {
     AuctionUpdated(crate::domain::entities::Auction),
     TradeUpdated(crate::domain::entities::Trade),
     TurnUpdated { game_id: Uuid, current_turn_user_id: Uuid },
+    PropertyUpdated(crate::domain::entities::ParticipantProperty),
 }
 
 impl GameEvent {
@@ -30,6 +31,7 @@ impl GameEvent {
             GameEvent::AuctionUpdated(a) => a.game_id,
             GameEvent::TradeUpdated(t) => t.game_id,
             GameEvent::TurnUpdated { game_id, .. } => *game_id,
+            GameEvent::PropertyUpdated(p) => p.game_id,
         }
     }
 }

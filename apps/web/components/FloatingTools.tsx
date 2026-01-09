@@ -30,7 +30,7 @@ export default function FloatingTools({ gameId, myParticipantId, myUserId, onRol
                 <FloatingCalculator />
                 <FloatingSpecialDice gameId={gameId} myParticipantId={myParticipantId} myUserId={myUserId} isInDebt={isInDebt} />
                 {onRollDice && (
-                    <Tooltip title={isInDebt ? "Cannot roll while in debt" : (isMyTurn === false ? "Not your turn" : "Roll Dice (Shortcut)")}>
+                    <Tooltip title={isInDebt ? "No puedes tirar mientras estés en deuda" : (isMyTurn === false ? "No es tu turno" : "Lanzar Dados (Atajo)")}>
                         <span>
                             <Fab
                                 color="error"

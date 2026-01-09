@@ -31,14 +31,14 @@ interface RouletteOption {
 }
 
 const OPTIONS: RouletteOption[] = [
-    { id: 1, label: 'Pay 150 to bank', type: 'red', value: -150 },
+    { id: 1, label: 'Paga 150 al banco', type: 'red', value: -150 },
     { id: 2, label: 'Compra 1 propiedad sin dueño', type: 'green', value: 0 },
-    { id: 3, label: 'Pay 50 to bank', type: 'red', value: -50 },
+    { id: 3, label: 'Paga 50 al banco', type: 'red', value: -50 },
     { id: 4, label: 'Gran Premio', type: 'green', value: 0 },
-    { id: 5, label: 'Pay 100 to bank', type: 'red', value: -100 },
-    { id: 6, label: 'Take the token', type: 'green', value: 0 },
-    { id: 7, label: 'Pay 200 to bank', type: 'red', value: -200 },
-    { id: 8, label: 'Free house', type: 'green', value: 0 },
+    { id: 5, label: 'Paga 100 al banco', type: 'red', value: -100 },
+    { id: 6, label: 'Toma el token', type: 'green', value: 0 },
+    { id: 7, label: 'Paga 200 al banco', type: 'red', value: -200 },
+    { id: 8, label: 'Casa gratis', type: 'green', value: 0 },
 ];
 
 interface RouletteToolProps {
@@ -143,7 +143,7 @@ export default function RouletteTool({ gameId, myParticipantId, myUserId, jackpo
             >
                 <Stack direction="row" alignItems="center" gap={1}>
                     <DataUsageIcon color="secondary" />
-                    <Typography fontWeight="bold">Roulette</Typography>
+                    <Typography fontWeight="bold">Ruleta</Typography>
                 </Stack>
                 <Typography variant="body2" color="success.main" fontWeight="bold">
                     Jackpot: ${jackpotBalance.toLocaleString()}
@@ -178,7 +178,7 @@ export default function RouletteTool({ gameId, myParticipantId, myUserId, jackpo
                                 ? OPTIONS[displayIndex].label
                                 : selectedOption
                                     ? selectedOption.label
-                                    : 'Press Spin'}
+                                    : 'Presiona Girar'}
                         </Typography>
 
                     </Box>
@@ -191,7 +191,7 @@ export default function RouletteTool({ gameId, myParticipantId, myUserId, jackpo
                         onClick={() => setConfirmSpinOpen(true)}
                         disabled={isSpinning}
                     >
-                        {isSpinning ? 'Spinning...' : 'SPIN ROULETTE'}
+                        {isSpinning ? 'Girando...' : 'GIRAR RULETA'}
                     </Button>
 
                     <Button
@@ -203,7 +203,7 @@ export default function RouletteTool({ gameId, myParticipantId, myUserId, jackpo
                         onClick={() => setConfirmJackpotOpen(true)}
                         disabled={isSpinning || jackpotBalance <= 0}
                     >
-                        WIN JACKPOT MANUALLY
+                        GANAR PREMIO MANUALMENTE
                     </Button>
 
                     {/* History Section */}
@@ -217,13 +217,13 @@ export default function RouletteTool({ gameId, myParticipantId, myUserId, jackpo
                             sx={{ cursor: 'pointer', userSelect: 'none' }}
                         >
                             <HistoryIcon fontSize="small" color="disabled" />
-                            <Typography variant="caption" color="text.secondary">Spin History</Typography>
+                            <Typography variant="caption" color="text.secondary">Historial de Giros</Typography>
                             {showHistory ? <ExpandLessIcon fontSize="small" color="disabled" /> : <ExpandMoreIcon fontSize="small" color="disabled" />}
                         </Stack>
                         <Collapse in={showHistory}>
                             <Box maxHeight={200} overflow="auto" border="1px solid rgba(255,255,255,0.1)" borderRadius={1}>
                                 <List dense disablePadding>
-                                    {history.length === 0 && <Box p={1}><Typography variant="body2" color="text.disabled">No spins yet.</Typography></Box>}
+                                    {history.length === 0 && <Box p={1}><Typography variant="body2" color="text.disabled">Sin giros aún.</Typography></Box>}
                                     {history.map((item) => {
                                         const ts = parseServerDate(item.created_at);
                                         const timeStr = ts ? new Date(ts).toLocaleTimeString() : '';
@@ -258,18 +258,18 @@ export default function RouletteTool({ gameId, myParticipantId, myUserId, jackpo
             {/* Confirmation Dialogs */}
             <ConfirmDialog
                 open={confirmSpinOpen}
-                title="Spin the Roulette?"
-                description="This will roll the wheel and may result in winning the jackpot or paying fees."
-                confirmText="Spin It!"
+                title="¿Girar la Ruleta?"
+                description="Esto hará girar la rueda y puede resultar en ganar el pozo o pagar cargos."
+                confirmText="¡Girar!"
                 onClose={() => setConfirmSpinOpen(false)}
                 onConfirm={handleSpin}
             />
 
             <ConfirmDialog
                 open={confirmJackpotOpen}
-                title="Claim Jackpot?"
-                description={`Are you sure you want to manually claim the jackpot of $${jackpotBalance.toLocaleString()}? This is usually done by winning the roulette.`}
-                confirmText="Claim Jackpot"
+                title="¿Reclamar el Pozo?"
+                description={`¿Estás seguro de que quieres reclamar manualmente el pozo de $${jackpotBalance.toLocaleString()}? Esto normalmente se hace ganando en la ruleta.`}
+                confirmText="Reclamar Pozo"
                 severity="success"
                 onClose={() => setConfirmJackpotOpen(false)}
                 onConfirm={() => claimJackpotMutation.mutate({ gameId }, {
@@ -279,7 +279,7 @@ export default function RouletteTool({ gameId, myParticipantId, myUserId, jackpo
                             recordSpinMutation.mutate({
                                 gameId,
                                 userId: myUserId,
-                                resultLabel: 'Jackpot Manually!',
+                                resultLabel: '¡Pozo Manual!',
                                 resultValue: data?.amount ? Number(data.amount) : 0,
                                 resultType: 'green'
                             });

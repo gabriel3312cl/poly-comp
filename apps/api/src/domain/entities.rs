@@ -298,7 +298,9 @@ pub struct ParticipantProperty {
     #[sqlx(default)]
     pub hotel_count: i32,
     // Joined fields (optional)
+    #[sqlx(default)]
     pub property_name: Option<String>,
+    #[sqlx(default)]
     pub group_color: Option<String>,
 }
 

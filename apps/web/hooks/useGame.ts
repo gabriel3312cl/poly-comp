@@ -131,7 +131,7 @@ export const useGetPlayedGames = () => {
 export const useUpdateGame = () => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: async ({ id, data }: { id: string; data: { name?: string; status?: string } }) => {
+        mutationFn: async ({ id, data }: { id: string; data: { name?: string; status?: string; initiative_rolls?: Record<string, number> } }) => {
             const res = await api.put(`/games/${id}`, data);
             return res.data;
         },
@@ -163,6 +163,20 @@ export const useUpdatePosition = () => {
         },
         onSuccess: (_, variables) => {
             queryClient.invalidateQueries({ queryKey: ['participants', variables.gameId] });
+        }
+    });
+};
+
+export const useEndTurn = (gameId: string) => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async () => {
+            const res = await api.post(`/games/${gameId}/end-turn`);
+            return res.data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['game', gameId] });
+            queryClient.invalidateQueries({ queryKey: ['participants', gameId] });
         }
     });
 };

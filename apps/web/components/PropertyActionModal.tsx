@@ -1,17 +1,21 @@
+'use client';
+
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography, Box } from '@mui/material';
 import { useGetGameProperties, useGetAllProperties, usePropertyActions } from '@/hooks/useProperties';
 import { useAuctionActions } from '@/hooks/useAuctions';
 import { BOARD_SPACES } from '@/utils/boardSpaces';
 import { useAuthStore } from '@/store/authStore';
 import { useState, useEffect } from 'react';
+import { toast } from 'react-hot-toast';
 
 interface PropertyActionModalProps {
     gameId: string;
     myPosition: number;
+    myParticipantId: string;
     open?: boolean; // Optional override
 }
 
-export default function PropertyActionModal({ gameId, myPosition }: PropertyActionModalProps) {
+export default function PropertyActionModal({ gameId, myPosition, myParticipantId }: PropertyActionModalProps) {
     const user = useAuthStore(state => state.user);
     const { data: allProperties = [] } = useGetAllProperties();
     const { data: ownership = [] } = useGetGameProperties(gameId);
@@ -27,7 +31,7 @@ export default function PropertyActionModal({ gameId, myPosition }: PropertyActi
     // Check ownership
     const owner = propertyDef ? ownership.find(o => o.property_id === propertyDef.id) : null;
     const isUnowned = propertyDef && !owner;
-    const isMine = owner?.participant_id === user?.id;
+    const isMine = owner?.participant_id === myParticipantId;
 
     // Open logic: If I land on a property that is Unowned, prompt to buy.
     // Ideally this triggers only ONCE when position changes.
@@ -47,10 +51,10 @@ export default function PropertyActionModal({ gameId, myPosition }: PropertyActi
             </DialogTitle>
             <DialogContent sx={{ mt: 2 }}>
                 <Typography variant="body2">
-                    This property is unowned.
+                    Esta propiedad no tiene dueño.
                 </Typography>
                 <Typography variant="h6" color="success.main" fontWeight="bold">
-                    Price: ${propertyDef.price}
+                    Precio: ${propertyDef.price}
                 </Typography>
             </DialogContent>
             <DialogActions>
@@ -58,18 +62,36 @@ export default function PropertyActionModal({ gameId, myPosition }: PropertyActi
                     variant="contained"
                     color="success"
                     fullWidth
-                    onClick={() => user && buyProperty.mutate({ propertyId: propertyDef.id, userId: user.id })}
+                    onClick={() => {
+                        if (user) {
+                            buyProperty.mutate(
+                                { propertyId: propertyDef.id, userId: user.id },
+                                {
+                                    onSuccess: () => toast.success(`¡Has comprado ${propertyDef.name}!`),
+                                    onError: (err: any) => toast.error(err.message || 'Error al comprar propiedad')
+                                }
+                            );
+                        }
+                    }}
                     disabled={buyProperty.isPending}
                 >
-                    Buy Property
+                    Comprar Propiedad
                 </Button>
                 <Button
                     variant="outlined"
                     color="warning"
                     fullWidth
-                    onClick={() => startAuction.mutate({ propertyId: propertyDef.id })}
+                    onClick={() => {
+                        startAuction.mutate(
+                            { propertyId: propertyDef.id },
+                            {
+                                onSuccess: () => toast.success('Subasta iniciada'),
+                                onError: (err: any) => toast.error(err.message || 'Error al iniciar subasta')
+                            }
+                        );
+                    }}
                 >
-                    Auction
+                    Subastar
                 </Button>
             </DialogActions>
         </Dialog>

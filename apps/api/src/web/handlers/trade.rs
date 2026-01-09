@@ -1,6 +1,8 @@
 use axum::{
     extract::{Path, State},
     Json,
+    response::IntoResponse,
+    http::StatusCode,
 };
 use uuid::Uuid;
 use crate::state::AppState;
@@ -26,7 +28,7 @@ pub async fn create_trade(
     State(state): State<AppState>,
     Path(game_id): Path<Uuid>,
     Json(payload): Json<CreateTradeRequest>,
-) -> Result<Json<Trade>, String> {
+) -> impl IntoResponse {
     let trade = Trade {
         id: Uuid::new_v4(),
         game_id,
@@ -42,9 +44,10 @@ pub async fn create_trade(
         created_at: Some(time::OffsetDateTime::now_utc()),
     };
 
-    state.trade_service.create_trade(trade).await
-        .map(Json)
-        .map_err(|e| e.to_string())
+    match state.trade_service.create_trade(trade).await {
+        Ok(t) => (StatusCode::OK, Json(t)).into_response(),
+        Err(e) => (StatusCode::BAD_REQUEST, e.to_string()).into_response(),
+    }
 }
 
 #[derive(serde::Deserialize)]
@@ -56,18 +59,30 @@ pub async fn accept_trade(
     State(state): State<AppState>,
     Path((_game_id, trade_id)): Path<(Uuid, Uuid)>,
     Json(payload): Json<RespondTradeRequest>,
-) -> Result<Json<Trade>, String> {
-    state.trade_service.accept_trade(trade_id, payload.user_id).await
-        .map(Json)
-        .map_err(|e| e.to_string())
+) -> impl IntoResponse {
+    match state.trade_service.accept_trade(trade_id, payload.user_id).await {
+        Ok(t) => (StatusCode::OK, Json(t)).into_response(),
+        Err(e) => (StatusCode::BAD_REQUEST, e.to_string()).into_response(),
+    }
 }
 
 pub async fn reject_trade(
     State(state): State<AppState>,
     Path((_game_id, trade_id)): Path<(Uuid, Uuid)>,
     Json(payload): Json<RespondTradeRequest>,
-) -> Result<Json<Trade>, String> {
-    state.trade_service.reject_trade(trade_id, payload.user_id).await
-        .map(Json)
-        .map_err(|e| e.to_string())
+) -> impl IntoResponse {
+    match state.trade_service.reject_trade(trade_id, payload.user_id).await {
+        Ok(t) => (StatusCode::OK, Json(t)).into_response(),
+        Err(e) => (StatusCode::BAD_REQUEST, e.to_string()).into_response(),
+    }
+}
+
+pub async fn get_trades(
+    State(state): State<AppState>,
+    Path(game_id): Path<Uuid>,
+) -> impl IntoResponse {
+    match state.trade_service.get_active_trades(game_id).await {
+        Ok(t) => (StatusCode::OK, Json(t)).into_response(),
+        Err(e) => (StatusCode::BAD_REQUEST, e.to_string()).into_response(),
+    }
 }
